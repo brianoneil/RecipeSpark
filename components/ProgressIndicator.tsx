@@ -60,76 +60,91 @@ export default function ProgressIndicator({
     : 0;
 
   return (
-    <BlurView intensity={30} style={styles.container}>
-      {/* Progress bar */}
-      <View style={styles.progressBarContainer}>
-        <View style={[styles.progressBar, { width: `${progress}%` }]} />
-      </View>
+    <View style={styles.container}>
+      <BlurView intensity={30} style={styles.contentContainer}>
+        {/* Progress bar */}
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBar, { width: `${progress}%` }]} />
+        </View>
 
-      {/* Steps */}
-      <View style={styles.stepsContainer}>
-        {steps.map((step, index) => (
-          <View key={step.id} style={styles.stepItem}>
-            <View
-              style={[
-                styles.stepIndicator,
-                step.status === 'completed' && styles.stepCompleted,
-                step.status === 'in-progress' && styles.stepInProgress,
-                step.status === 'error' && styles.stepError,
-              ]}
-            >
-              {step.status === 'in-progress' && (
-                <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                  <Loader size={16} color="#fff" />
-                </Animated.View>
-              )}
-              {step.status === 'completed' && (
-                <Text style={styles.stepCompletedText}>✓</Text>
-              )}
-              {step.status === 'error' && (
-                <Text style={styles.stepErrorText}>!</Text>
-              )}
-              {step.status === 'waiting' && (
-                <Text style={styles.stepWaitingText}>{index + 1}</Text>
-              )}
+        {/* Steps */}
+        <View style={styles.stepsContainer}>
+          {steps.map((step, index) => (
+            <View key={step.id} style={styles.stepItem}>
+              <View
+                style={[
+                  styles.stepIndicator,
+                  step.status === 'completed' && styles.stepCompleted,
+                  step.status === 'in-progress' && styles.stepInProgress,
+                  step.status === 'error' && styles.stepError,
+                ]}
+              >
+                {step.status === 'in-progress' && (
+                  <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                    <Loader size={16} color="#fff" />
+                  </Animated.View>
+                )}
+                {step.status === 'completed' && (
+                  <Text style={styles.stepCompletedText}>✓</Text>
+                )}
+                {step.status === 'error' && (
+                  <Text style={styles.stepErrorText}>!</Text>
+                )}
+                {step.status === 'waiting' && (
+                  <Text style={styles.stepWaitingText}>{index + 1}</Text>
+                )}
+              </View>
+              <Text
+                style={[
+                  styles.stepLabel,
+                  step.status === 'in-progress' && styles.stepLabelActive,
+                  step.status === 'completed' && styles.stepLabelCompleted,
+                  step.status === 'error' && styles.stepLabelError,
+                ]}
+              >
+                {step.label}
+              </Text>
             </View>
-            <Text
-              style={[
-                styles.stepLabel,
-                step.status === 'in-progress' && styles.stepLabelActive,
-                step.status === 'completed' && styles.stepLabelCompleted,
-                step.status === 'error' && styles.stepLabelError,
-              ]}
-            >
-              {step.label}
-            </Text>
+          ))}
+        </View>
+
+        {/* Status message */}
+        {statusMessage && (
+          <View style={styles.statusContainer}>
+            <Text style={styles.statusText}>{statusMessage}</Text>
           </View>
-        ))}
-      </View>
+        )}
 
-      {/* Status message */}
-      {statusMessage && (
-        <View style={styles.statusContainer}>
-          <Text style={styles.statusText}>{statusMessage}</Text>
-        </View>
-      )}
-
-      {/* Error message */}
-      {error && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
-    </BlurView>
+        {/* Error message */}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+      </BlurView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  contentContainer: {
     margin: 20,
     padding: 20,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    width: '90%',
+    maxWidth: 500,
     overflow: 'hidden',
   },
   progressBarContainer: {

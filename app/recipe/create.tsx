@@ -9,339 +9,6 @@ import type { ParsedIngredient } from '@/services/ingredient';
 import ProgressIndicator, { ProgressStep } from '@/components/ProgressIndicator';
 import { eventService, AIEvent } from '@/services/events';
 
-export default function CreateRecipeScreen() {
-  const { setCurrentRecipe } = useRecipeStore();
-  const params = useLocalSearchParams();
-  const mode = params.mode as 'use-what-i-have' | 'suggest';
-
-  // No need for navigation ref anymore
-
-  const [ingredients, setIngredients] = useState<ParsedIngredient[]>([]);
-  const [newIngredient, setNewIngredient] = useState('');
-  const [servings, setServings] = useState(4);
-  const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
-  const [maxTime, setMaxTime] = useState(30);
-  const [recipeHint, setRecipeHint] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isParsingIngredient, setIsParsingIngredient] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [currentStep, setCurrentStep] = useState<string>('ingredients');
-
-  // Define the steps for the recipe creation process - simplified for user understanding
-  const progressSteps: ProgressStep[] = [
-    { id: 'ingredients', label: 'Ingredients', status: 'completed' },
-    { id: 'recipe-generation', label: 'Creating Recipe', status: 'waiting' },
-    { id: 'image-generation', label: 'Adding Image', status: 'waiting' },
-  ];
-
-  // Update the steps based on the current step
-  const updatedSteps = progressSteps.map(step => {
-    let status: 'waiting' | 'in-progress' | 'completed' | 'error' = 'waiting';
-
-    if (step.id === currentStep) {
-      status = error ? 'error' : 'in-progress';
-    } else if (progressSteps.findIndex(s => s.id === step.id) < progressSteps.findIndex(s => s.id === currentStep)) {
-      status = 'completed';
-    }
-
-    return {
-      ...step,
-      status
-    };
-  });
-
-  const cuisineTypes = [
-    'Italian', 'Chinese', 'Mexican', 'Indian', 'Japanese',
-    'Thai', 'French', 'Mediterranean', 'American', 'Korean'
-  ];
-
-  const addIngredient = async () => {
-    if (newIngredient.trim()) {
-      setIsParsingIngredient(true);
-      setStatusMessage(`Parsing ingredient: ${newIngredient.trim()}`);
-      try {
-        const parsedIngredients = await ingredientService.parseIngredient(newIngredient.trim());
-        if (parsedIngredients.length > 0) {
-          setIngredients(prev => [...prev, ...parsedIngredients]);
-          setStatusMessage(`Added: ${parsedIngredients.map(ing => ing.name).join(', ')}`);
-          // Clear status message after a short delay
-          setTimeout(() => setStatusMessage(null), 1500);
-        }
-      } catch (error) {
-        console.error('Failed to parse ingredients:', error);
-        setError('Failed to parse ingredients. Please try again.');
-        setTimeout(() => setError(null), 3000);
-      } finally {
-        setIsParsingIngredient(false);
-        setNewIngredient('');
-      }
-    }
-  };
-
-  const removeIngredient = (id: string) => {
-    setIngredients(ingredients.filter(ing => ing.id !== id));
-  };
-
-  const toggleCuisine = (cuisine: string) => {
-    setSelectedCuisines(prev =>
-      prev.includes(cuisine)
-        ? prev.filter(c => c !== cuisine)
-        : [...prev, cuisine]
-    );
-  };
-
-  // Set up event listeners for AI operations
-  useEffect(() => {
-    // Set up event listeners - simplified for better user experience
-    const listeners = [
-      // Combine prompt and generation events into a single 'Creating Recipe' step
-      eventService.subscribe(AIEvent.RECIPE_PROMPT_START, () => {
-        setCurrentStep('recipe-generation');
-        setStatusMessage('Creating your personalized recipe...');
-      }),
-
-      eventService.subscribe(AIEvent.RECIPE_GENERATION_START, () => {
-        setCurrentStep('recipe-generation');
-        setStatusMessage('Creating your personalized recipe...');
-      }),
-
-      eventService.subscribe(AIEvent.RECIPE_GENERATION_COMPLETE, () => {
-        setStatusMessage('Recipe created! Adding an image...');
-      }),
-
-      // Combine image prompt and generation into a single 'Adding Image' step
-      eventService.subscribe(AIEvent.IMAGE_PROMPT_START, () => {
-        setCurrentStep('image-generation');
-        setStatusMessage('Adding a beautiful image to your recipe...');
-      }),
-
-      eventService.subscribe(AIEvent.IMAGE_GENERATION_START, () => {
-        setCurrentStep('image-generation');
-        setStatusMessage('Adding a beautiful image to your recipe...');
-      }),
-
-      // Handle completion and navigation
-      eventService.subscribe(AIEvent.IMAGE_GENERATION_COMPLETE, () => {
-        console.log('💬 IMAGE_GENERATION_COMPLETE event received, preparing to redirect...');
-        setStatusMessage('Recipe complete! Opening recipe...');
-
-        // Redirect immediately
-        setIsGenerating(false);
-        router.push('/recipe/view');
-      }),
-
-      eventService.subscribe(AIEvent.ERROR, (data) => {
-        setError(data?.message || 'An error occurred during recipe creation');
-      })
-    ];
-
-    // Clean up listeners on unmount
-    return () => {
-      listeners.forEach(unsubscribe => unsubscribe());
-    };
-  }, []);
-
-  const handleCreateRecipe = async () => {
-    console.log('🚀 Starting recipe creation process');
-
-    try {
-      setIsGenerating(true);
-      setError(null);
-
-      const recipeRequest = {
-        ingredients: ingredients.map(ing => ing.name),
-        servings: servings.toString(),
-        cuisines: selectedCuisines,
-        maxTime,
-        hint: recipeHint,
-        mode,
-      };
-
-      // Call the recipe service to generate the recipe
-      // The events will be emitted by the service and handled by our listeners
-      const recipe = await recipeService.generateRecipe(recipeRequest);
-
-      // Store the recipe in the store so it's available when we redirect
-      setCurrentRecipe(recipe);
-
-      // The redirection will be handled by the IMAGE_GENERATION_COMPLETE event listener
-
-      // Add a simple safety timeout in case the image generation takes too long
-      setTimeout(() => {
-        if (isGenerating) {
-          console.log('⚠️ Safety timeout triggered - redirecting to view');
-          setIsGenerating(false);
-          router.push('/recipe/view');
-        }
-      }, 15000); // 15 seconds safety timeout
-
-    } catch (error) {
-      console.error('❌ Recipe creation error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to generate recipe. Please try again.');
-      setIsGenerating(false);
-    }
-  };
-
-  const isCreateEnabled = ingredients.length > 0 && !isGenerating;
-
-  return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>
-          {mode === 'use-what-i-have' ? 'Create with Your Ingredients' : 'Get Recipe Suggestions'}
-        </Text>
-      </View>
-
-      {isGenerating && (
-        <ProgressIndicator
-          steps={updatedSteps}
-          currentStepId={currentStep}
-          statusMessage={statusMessage}
-          error={error}
-        />
-      )}
-
-      {!isGenerating && error && (
-        <BlurView intensity={20} style={styles.errorSection}>
-          <Text style={styles.errorText}>{error}</Text>
-        </BlurView>
-      )}
-
-      <BlurView intensity={20} style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <ChefHat size={24} color="#000" />
-          <Text style={styles.sectionTitle}>Ingredients</Text>
-        </View>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            value={newIngredient}
-            onChangeText={setNewIngredient}
-            onSubmitEditing={addIngredient}
-            placeholder="Add an ingredient (e.g., '2 cups flour')..."
-            returnKeyType="done"
-            editable={!isParsingIngredient}
-          />
-          {isParsingIngredient && (
-            <View style={styles.parsingIndicator}>
-              <Loader2 size={20} color="#000" />
-            </View>
-          )}
-        </View>
-
-        {isParsingIngredient && statusMessage && (
-          <View style={styles.parsingStatus}>
-            <Text style={styles.parsingStatusText}>{statusMessage}</Text>
-          </View>
-        )}
-
-        <View style={styles.ingredientsList}>
-          {ingredients.map(ingredient => (
-            <View key={ingredient.id} style={styles.ingredientChip}>
-              <Text style={styles.ingredientText}>
-                {ingredient.quantity && ingredient.unit
-                  ? `${ingredient.quantity} ${ingredient.unit} ${ingredient.name}`
-                  : ingredient.name}
-              </Text>
-              <TouchableOpacity onPress={() => removeIngredient(ingredient.id)}>
-                <X size={16} color="#666" />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-      </BlurView>
-
-      <BlurView intensity={20} style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Users size={24} color="#000" />
-          <Text style={styles.sectionTitle}>Serving Size</Text>
-        </View>
-        <View style={styles.servingControls}>
-          <TouchableOpacity
-            style={styles.servingButton}
-            onPress={() => setServings(prev => Math.max(1, prev - 1))}>
-            <Text style={styles.servingButtonText}>-</Text>
-          </TouchableOpacity>
-          <Text style={styles.servingCount}>{servings} people</Text>
-          <TouchableOpacity
-            style={styles.servingButton}
-            onPress={() => setServings(prev => prev + 1)}>
-            <Text style={styles.servingButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
-      </BlurView>
-
-      <BlurView intensity={20} style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Utensils size={24} color="#000" />
-          <Text style={styles.sectionTitle}>Cuisine Type</Text>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.cuisineScroll}>
-          {cuisineTypes.map(cuisine => (
-            <TouchableOpacity
-              key={cuisine}
-              style={[
-                styles.cuisineChip,
-                selectedCuisines.includes(cuisine) && styles.cuisineChipSelected
-              ]}
-              onPress={() => toggleCuisine(cuisine)}>
-              <Text style={[
-                styles.cuisineText,
-                selectedCuisines.includes(cuisine) && styles.cuisineTextSelected
-              ]}>{cuisine}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </BlurView>
-
-      <BlurView intensity={20} style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Clock size={24} color="#000" />
-          <Text style={styles.sectionTitle}>Maximum Time</Text>
-        </View>
-        <View style={styles.timeControls}>
-          <TouchableOpacity
-            style={styles.timeButton}
-            onPress={() => setMaxTime(prev => Math.max(15, prev - 15))}>
-            <Text style={styles.timeButtonText}>-15 min</Text>
-          </TouchableOpacity>
-          <Text style={styles.timeValue}>{maxTime} minutes</Text>
-          <TouchableOpacity
-            style={styles.timeButton}
-            onPress={() => setMaxTime(prev => prev + 15)}>
-            <Text style={styles.timeButtonText}>+15 min</Text>
-          </TouchableOpacity>
-        </View>
-      </BlurView>
-
-      <BlurView intensity={20} style={styles.section}>
-        <Text style={styles.sectionTitle}>Recipe Hint</Text>
-        <TextInput
-          style={[styles.input, styles.multilineInput]}
-          value={recipeHint}
-          onChangeText={setRecipeHint}
-          placeholder="Add any special requests or preferences..."
-          multiline
-          numberOfLines={3}
-        />
-      </BlurView>
-
-      {!isGenerating && (
-        <TouchableOpacity
-          style={[styles.createButton, !isCreateEnabled && styles.createButtonDisabled]}
-          disabled={!isCreateEnabled}
-          onPress={handleCreateRecipe}>
-          <Text style={styles.createButtonText}>Create Recipe</Text>
-        </TouchableOpacity>
-      )}
-    </ScrollView>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -531,3 +198,338 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+export default function CreateRecipeScreen() {
+  const { setCurrentRecipe } = useRecipeStore();
+  const params = useLocalSearchParams();
+  const mode = params.mode as 'use-what-i-have' | 'suggest';
+
+  // No need for navigation ref anymore
+
+  const [ingredients, setIngredients] = useState<ParsedIngredient[]>([]);
+  const [newIngredient, setNewIngredient] = useState('');
+  const [servings, setServings] = useState(4);
+  const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
+  const [maxTime, setMaxTime] = useState(30);
+  const [recipeHint, setRecipeHint] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isParsingIngredient, setIsParsingIngredient] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState<string>('ingredients');
+
+  // Define the steps for the recipe creation process - simplified for user understanding
+  const progressSteps: ProgressStep[] = [
+    { id: 'ingredients', label: 'Ingredients', status: 'completed' },
+    { id: 'recipe-generation', label: 'Creating Recipe', status: 'waiting' },
+    { id: 'image-generation', label: 'Adding Image', status: 'waiting' },
+  ];
+
+  // Update the steps based on the current step
+  const updatedSteps = progressSteps.map(step => {
+    let status: 'waiting' | 'in-progress' | 'completed' | 'error' = 'waiting';
+
+    if (step.id === currentStep) {
+      status = error ? 'error' : 'in-progress';
+    } else if (progressSteps.findIndex(s => s.id === step.id) < progressSteps.findIndex(s => s.id === currentStep)) {
+      status = 'completed';
+    }
+
+    return {
+      ...step,
+      status
+    };
+  });
+
+  const cuisineTypes = [
+    'Italian', 'Chinese', 'Mexican', 'Indian', 'Japanese',
+    'Thai', 'French', 'Mediterranean', 'American', 'Korean'
+  ];
+
+  const addIngredient = async () => {
+    if (newIngredient.trim()) {
+      setIsParsingIngredient(true);
+      setStatusMessage(`Parsing ingredient: ${newIngredient.trim()}`);
+      try {
+        const parsedIngredients = await ingredientService.parseIngredient(newIngredient.trim());
+        if (parsedIngredients.length > 0) {
+          setIngredients(prev => [...prev, ...parsedIngredients]);
+          setStatusMessage(`Added: ${parsedIngredients.map(ing => ing.name).join(', ')}`);
+          // Clear status message after a short delay
+          setTimeout(() => setStatusMessage(null), 1500);
+        }
+      } catch (error) {
+        console.error('Failed to parse ingredients:', error);
+        setError('Failed to parse ingredients. Please try again.');
+        setTimeout(() => setError(null), 3000);
+      } finally {
+        setIsParsingIngredient(false);
+        setNewIngredient('');
+      }
+    }
+  };
+
+  const removeIngredient = (id: string) => {
+    setIngredients(ingredients.filter(ing => ing.id !== id));
+  };
+
+  const toggleCuisine = (cuisine: string) => {
+    setSelectedCuisines(prev =>
+      prev.includes(cuisine)
+        ? prev.filter(c => c !== cuisine)
+        : [...prev, cuisine]
+    );
+  };
+
+  // Set up event listeners for AI operations
+  useEffect(() => {
+    // Set up event listeners - simplified for better user experience
+    const listeners = [
+      // Combine prompt and generation events into a single 'Creating Recipe' step
+      eventService.subscribe(AIEvent.RECIPE_PROMPT_START, () => {
+        setCurrentStep('recipe-generation');
+        setStatusMessage('Creating your personalized recipe...');
+      }),
+
+      eventService.subscribe(AIEvent.RECIPE_GENERATION_START, () => {
+        setCurrentStep('recipe-generation');
+        setStatusMessage('Creating your personalized recipe...');
+      }),
+
+      eventService.subscribe(AIEvent.RECIPE_GENERATION_COMPLETE, () => {
+        setStatusMessage('Recipe created! Adding an image...');
+      }),
+
+      // Combine image prompt and generation into a single 'Adding Image' step
+      eventService.subscribe(AIEvent.IMAGE_PROMPT_START, () => {
+        setCurrentStep('image-generation');
+        setStatusMessage('Adding a beautiful image to your recipe...');
+      }),
+
+      eventService.subscribe(AIEvent.IMAGE_GENERATION_START, () => {
+        setCurrentStep('image-generation');
+        setStatusMessage('Adding a beautiful image to your recipe...');
+      }),
+
+      // Handle completion and navigation
+      eventService.subscribe(AIEvent.IMAGE_GENERATION_COMPLETE, () => {
+        console.log('💬 IMAGE_GENERATION_COMPLETE event received, preparing to redirect...');
+        setStatusMessage('Recipe complete! Opening recipe...');
+
+        // Redirect immediately
+        setIsGenerating(false);
+        router.push('/recipe/view');
+      }),
+
+      eventService.subscribe(AIEvent.ERROR, (data) => {
+        setError(data?.message || 'An error occurred during recipe creation');
+      })
+    ];
+
+    // Clean up listeners on unmount
+    return () => {
+      listeners.forEach(unsubscribe => unsubscribe());
+    };
+  }, []);
+
+  const handleCreateRecipe = async () => {
+    console.log('🚀 Starting recipe creation process');
+
+    try {
+      setIsGenerating(true);
+      setError(null);
+
+      const recipeRequest = {
+        ingredients: ingredients.map(ing => ing.name),
+        servings: servings.toString(),
+        cuisines: selectedCuisines,
+        maxTime,
+        hint: recipeHint,
+        mode,
+      };
+
+      // Call the recipe service to generate the recipe
+      // The events will be emitted by the service and handled by our listeners
+      const recipe = await recipeService.generateRecipe(recipeRequest);
+
+      // Store the recipe in the store so it's available when we redirect
+      setCurrentRecipe(recipe);
+
+      // The redirection will be handled by the IMAGE_GENERATION_COMPLETE event listener
+
+      // Add a simple safety timeout in case the image generation takes too long
+      setTimeout(() => {
+        if (isGenerating) {
+          console.log('⚠️ Safety timeout triggered - redirecting to view');
+          setIsGenerating(false);
+          router.push('/recipe/view');
+        }
+      }, 15000); // 15 seconds safety timeout
+
+    } catch (error) {
+      console.error('❌ Recipe creation error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to generate recipe. Please try again.');
+      setIsGenerating(false);
+    }
+  };
+
+  const isCreateEnabled = ingredients.length > 0 && !isGenerating;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.container} scrollEnabled={!isGenerating}>
+        <View style={styles.header}>
+          <Text style={styles.title}>
+            {mode === 'use-what-i-have' ? 'Create with Your Ingredients' : 'Get Recipe Suggestions'}
+          </Text>
+        </View>
+
+      {!isGenerating && error && (
+        <BlurView intensity={20} style={styles.errorSection}>
+          <Text style={styles.errorText}>{error}</Text>
+        </BlurView>
+      )}
+
+      <BlurView intensity={20} style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <ChefHat size={24} color="#000" />
+          <Text style={styles.sectionTitle}>Ingredients</Text>
+        </View>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={newIngredient}
+            onChangeText={setNewIngredient}
+            onSubmitEditing={addIngredient}
+            placeholder="Add an ingredient (e.g., '2 cups flour')..."
+            returnKeyType="done"
+            editable={!isParsingIngredient}
+          />
+          {isParsingIngredient && (
+            <View style={styles.parsingIndicator}>
+              <Loader2 size={20} color="#000" />
+            </View>
+          )}
+        </View>
+
+        {isParsingIngredient && statusMessage && (
+          <View style={styles.parsingStatus}>
+            <Text style={styles.parsingStatusText}>{statusMessage}</Text>
+          </View>
+        )}
+
+        <View style={styles.ingredientsList}>
+          {ingredients.map(ingredient => (
+            <View key={ingredient.id} style={styles.ingredientChip}>
+              <Text style={styles.ingredientText}>
+                {ingredient.quantity && ingredient.unit
+                  ? `${ingredient.quantity} ${ingredient.unit} ${ingredient.name}`
+                  : ingredient.name}
+              </Text>
+              <TouchableOpacity onPress={() => removeIngredient(ingredient.id)}>
+                <X size={16} color="#666" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      </BlurView>
+
+      <BlurView intensity={20} style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Users size={24} color="#000" />
+          <Text style={styles.sectionTitle}>Serving Size</Text>
+        </View>
+        <View style={styles.servingControls}>
+          <TouchableOpacity
+            style={styles.servingButton}
+            onPress={() => setServings(prev => Math.max(1, prev - 1))}>
+            <Text style={styles.servingButtonText}>-</Text>
+          </TouchableOpacity>
+          <Text style={styles.servingCount}>{servings} people</Text>
+          <TouchableOpacity
+            style={styles.servingButton}
+            onPress={() => setServings(prev => prev + 1)}>
+            <Text style={styles.servingButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
+      </BlurView>
+
+      <BlurView intensity={20} style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Utensils size={24} color="#000" />
+          <Text style={styles.sectionTitle}>Cuisine Type</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.cuisineScroll}>
+          {cuisineTypes.map(cuisine => (
+            <TouchableOpacity
+              key={cuisine}
+              style={[
+                styles.cuisineChip,
+                selectedCuisines.includes(cuisine) && styles.cuisineChipSelected
+              ]}
+              onPress={() => toggleCuisine(cuisine)}>
+              <Text style={[
+                styles.cuisineText,
+                selectedCuisines.includes(cuisine) && styles.cuisineTextSelected
+              ]}>{cuisine}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </BlurView>
+
+      <BlurView intensity={20} style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Clock size={24} color="#000" />
+          <Text style={styles.sectionTitle}>Maximum Time</Text>
+        </View>
+        <View style={styles.timeControls}>
+          <TouchableOpacity
+            style={styles.timeButton}
+            onPress={() => setMaxTime(prev => Math.max(15, prev - 15))}>
+            <Text style={styles.timeButtonText}>-15 min</Text>
+          </TouchableOpacity>
+          <Text style={styles.timeValue}>{maxTime} minutes</Text>
+          <TouchableOpacity
+            style={styles.timeButton}
+            onPress={() => setMaxTime(prev => prev + 15)}>
+            <Text style={styles.timeButtonText}>+15 min</Text>
+          </TouchableOpacity>
+        </View>
+      </BlurView>
+
+      <BlurView intensity={20} style={styles.section}>
+        <Text style={styles.sectionTitle}>Recipe Hint</Text>
+        <TextInput
+          style={[styles.input, styles.multilineInput]}
+          value={recipeHint}
+          onChangeText={setRecipeHint}
+          placeholder="Add any special requests or preferences..."
+          multiline
+          numberOfLines={3}
+        />
+      </BlurView>
+
+      {!isGenerating && (
+        <TouchableOpacity
+          style={[styles.createButton, !isCreateEnabled && styles.createButtonDisabled]}
+          disabled={!isCreateEnabled}
+          onPress={handleCreateRecipe}>
+          <Text style={styles.createButtonText}>Create Recipe</Text>
+        </TouchableOpacity>
+      )}
+    </ScrollView>
+
+    {isGenerating && (
+      <ProgressIndicator
+        steps={updatedSteps}
+        currentStepId={currentStep}
+        statusMessage={statusMessage}
+        error={error}
+      />
+    )}
+  </View>
+  );
+}
