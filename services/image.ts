@@ -3,6 +3,7 @@ import { eventService, AIEvent } from './events';
 
 export interface ImageGenerationConfig {
   recipeModel: string;
+  promptModel: string;
   imageModel: string;
   huggingFaceApiKey?: string;
 }
@@ -17,6 +18,7 @@ export class ImageService {
 
     console.log('🔧 Image Service Configuration:', {
       recipeModel: this.config.recipeModel,
+      promptModel: this.config.promptModel,
       imageModel: this.config.imageModel,
       hasHuggingFaceApiKey: !!this.config.huggingFaceApiKey
     });
@@ -106,7 +108,7 @@ Style: Professional food photography, overhead shot, natural lighting, styled on
    * @returns A detailed prompt for image generation
    */
   private async generateImagePrompt(recipe: any): Promise<string> {
-    console.log('📤 Preparing image prompt generation request:', { model: this.config.recipeModel });
+    console.log('📤 Preparing image prompt generation request:', { model: this.config.promptModel });
 
     // Check if we're using a FLUX model for image generation
     const isFluxModel = this.config.imageModel.toLowerCase().includes('flux');
@@ -135,7 +137,8 @@ Style: Professional food photography, overhead shot, natural lighting, styled on
     ];
 
     const startTime = performance.now();
-    const response = await this.openRouter.chat(this.config.recipeModel, messages, 0.7);
+    // Use the promptModel instead of recipeModel for generating image prompts
+    const response = await this.openRouter.chat(this.config.promptModel, messages, 0.7);
     const endTime = performance.now();
 
     console.log(`⏱️ Image prompt generation took ${Math.round(endTime - startTime)}ms`);
@@ -342,9 +345,9 @@ Style: Professional food photography, overhead shot, natural lighting, styled on
           };
           reader.readAsDataURL(blob);
         });
-      } catch (fetchError) {
+      } catch (fetchError: any) {
         console.error('❌ Fetch error during Hugging Face API call:', fetchError);
-        throw new Error(`Network error during Hugging Face API call: ${fetchError.message}`);
+        throw new Error(`Network error during Hugging Face API call: ${fetchError.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('❌ Hugging Face image generation error:', error);

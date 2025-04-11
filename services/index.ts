@@ -9,6 +9,7 @@ console.log('🔧 Environment Configuration:', {
   hasHuggingFaceApiKey: !!process.env.EXPO_PUBLIC_HUGGINGFACE_API_KEY,
   appUrl: process.env.EXPO_PUBLIC_APP_URL,
   recipeModel: process.env.EXPO_PUBLIC_RECIPE_MODEL,
+  promptModel: process.env.EXPO_PUBLIC_PROMPT_MODEL,
   imageModel: process.env.EXPO_PUBLIC_IMAGE_MODEL,
   ingredientsModel: process.env.EXPO_PUBLIC_INGREDIENTS_MODEL
 });
@@ -21,6 +22,7 @@ const openRouter = new OpenRouterService({
 
 export const imageService = new ImageService(openRouter, {
   recipeModel: process.env.EXPO_PUBLIC_RECIPE_MODEL!,
+  promptModel: process.env.EXPO_PUBLIC_PROMPT_MODEL || process.env.EXPO_PUBLIC_RECIPE_MODEL!,
   imageModel: process.env.EXPO_PUBLIC_IMAGE_MODEL!,
   huggingFaceApiKey: process.env.EXPO_PUBLIC_HUGGINGFACE_API_KEY,
 });

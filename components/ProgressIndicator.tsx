@@ -16,16 +16,16 @@ type ProgressIndicatorProps = {
   error: string | null;
 };
 
-export default function ProgressIndicator({ 
-  steps, 
-  currentStepId, 
-  statusMessage, 
-  error 
+export default function ProgressIndicator({
+  steps,
+  currentStepId,
+  statusMessage,
+  error
 }: ProgressIndicatorProps) {
   // Animation for the spinner
   const spinValue = useRef(new Animated.Value(0)).current;
-  
-  // Start the spinner animation when the component mounts
+
+  // Start the spinner animation when the component mounts or when currentStepId changes
   useEffect(() => {
     const spinAnimation = Animated.loop(
       Animated.timing(spinValue, {
@@ -35,14 +35,16 @@ export default function ProgressIndicator({
         useNativeDriver: true,
       })
     );
-    
+
+    // Reset and restart the animation
+    spinValue.setValue(0);
     spinAnimation.start();
-    
+
     return () => {
       spinAnimation.stop();
     };
-  }, []);
-  
+  }, [currentStepId]); // Re-run when currentStepId changes
+
   // Map the spin value to a rotation
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
@@ -51,10 +53,10 @@ export default function ProgressIndicator({
 
   // Calculate the current step index
   const currentStepIndex = steps.findIndex(step => step.id === currentStepId);
-  
+
   // Calculate progress percentage
-  const progress = currentStepIndex >= 0 
-    ? (currentStepIndex / (steps.length - 1)) * 100 
+  const progress = currentStepIndex >= 0
+    ? (currentStepIndex / (steps.length - 1)) * 100
     : 0;
 
   return (
@@ -63,12 +65,12 @@ export default function ProgressIndicator({
       <View style={styles.progressBarContainer}>
         <View style={[styles.progressBar, { width: `${progress}%` }]} />
       </View>
-      
+
       {/* Steps */}
       <View style={styles.stepsContainer}>
         {steps.map((step, index) => (
           <View key={step.id} style={styles.stepItem}>
-            <View 
+            <View
               style={[
                 styles.stepIndicator,
                 step.status === 'completed' && styles.stepCompleted,
@@ -91,7 +93,7 @@ export default function ProgressIndicator({
                 <Text style={styles.stepWaitingText}>{index + 1}</Text>
               )}
             </View>
-            <Text 
+            <Text
               style={[
                 styles.stepLabel,
                 step.status === 'in-progress' && styles.stepLabelActive,
@@ -104,14 +106,14 @@ export default function ProgressIndicator({
           </View>
         ))}
       </View>
-      
+
       {/* Status message */}
       {statusMessage && (
         <View style={styles.statusContainer}>
           <Text style={styles.statusText}>{statusMessage}</Text>
         </View>
       )}
-      
+
       {/* Error message */}
       {error && (
         <View style={styles.errorContainer}>
