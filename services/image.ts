@@ -244,8 +244,8 @@ Style: Professional food photography, overhead shot, natural lighting, styled on
             parameters: {
               guidance_scale: 7.5,
               num_inference_steps: 30,
-              width: 1024,
-              height: 1024
+              width: 512,
+              height: 512
               // No negative_prompt for this model
             }
           };
@@ -256,8 +256,8 @@ Style: Professional food photography, overhead shot, natural lighting, styled on
             parameters: {
               guidance_scale: 7.5,
               num_inference_steps: 30,
-              width: 1024,
-              height: 1024,
+              width: 512,
+              height: 512,
               negative_prompt: "low quality, blurry, distorted, deformed, ugly, bad anatomy, watermark, signature, text, logo"
             }
           };
