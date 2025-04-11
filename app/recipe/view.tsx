@@ -1,14 +1,43 @@
-import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Clock, Users, ChefHat, ShoppingBag } from 'lucide-react-native';
+import { Clock, Users, ChefHat, ShoppingBag, Heart, Share2 } from 'lucide-react-native';
+import { useState, useEffect } from 'react';
 import { useRecipeStore } from '@/store/recipeStore';
 
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=800&auto=format&fit=crop&q=80';
 
 export default function RecipeViewScreen() {
-  const { currentRecipe } = useRecipeStore();
+  const { currentRecipe, saveRecipe, removeSavedRecipe, isRecipeSaved } = useRecipeStore();
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Check if the current recipe is saved
+  useEffect(() => {
+    if (currentRecipe?.id) {
+      setIsSaved(isRecipeSaved(currentRecipe.id));
+    }
+  }, [currentRecipe, isRecipeSaved]);
+
+  // Handle toggling save state
+  const handleToggleSave = () => {
+    if (!currentRecipe) return;
+
+    if (isSaved && currentRecipe.id) {
+      removeSavedRecipe(currentRecipe.id);
+      setIsSaved(false);
+      Alert.alert('Recipe Removed', 'Recipe has been removed from your saved recipes.');
+    } else {
+      saveRecipe(currentRecipe);
+      setIsSaved(true);
+      Alert.alert('Recipe Saved', 'Recipe has been saved to your collection!');
+    }
+  };
+
+  // Handle sharing the recipe
+  const handleShare = () => {
+    Alert.alert('Coming Soon', 'Sharing functionality will be available in a future update.');
+  };
 
   if (!currentRecipe) {
     return (
@@ -103,6 +132,23 @@ export default function RecipeViewScreen() {
           </View>
         ))}
       </BlurView>
+
+      <View style={styles.actionButtonsContainer}>
+        <TouchableOpacity
+          style={[styles.actionButton, isSaved && styles.actionButtonActive]}
+          onPress={handleToggleSave}
+        >
+          <Heart size={24} color={isSaved ? '#fff' : '#000'} fill={isSaved ? '#fff' : 'transparent'} />
+          <Text style={[styles.actionButtonText, isSaved && styles.actionButtonTextActive]}>
+            {isSaved ? 'Saved' : 'Save Recipe'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+          <Share2 size={24} color="#000" />
+          <Text style={styles.actionButtonText}>Share</Text>
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity style={styles.startButton}>
         <Text style={styles.startButtonText}>Start Cooking</Text>
@@ -235,9 +281,38 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 14,
   },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    margin: 20,
+    marginBottom: 10,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 12,
+    borderRadius: 12,
+    flex: 1,
+    marginHorizontal: 5,
+    gap: 8,
+  },
+  actionButtonActive: {
+    backgroundColor: '#000',
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+  },
+  actionButtonTextActive: {
+    color: '#fff',
+  },
   startButton: {
     backgroundColor: '#000',
     margin: 20,
+    marginTop: 10,
     padding: 16,
     borderRadius: 16,
     alignItems: 'center',

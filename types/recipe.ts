@@ -43,6 +43,8 @@ export const NutritionSchema = z.object({
 
 // Define the complete recipe schema
 export const RecipeSchema = z.object({
+  // Optional ID field for saved recipes
+  id: z.string().optional(),
   '@context': z.literal('https://schema.org'),
   '@type': z.literal('Recipe'),
   name: z.string(),
