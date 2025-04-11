@@ -1,7 +1,7 @@
-import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, router } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChefHat, Clock, Users, Utensils, X, Loader as Loader2 } from 'lucide-react-native';
 import { useRecipeStore } from '@/store/recipeStore';
 import { recipeService, ingredientService } from '@/services';
@@ -197,6 +197,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  doneButton: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#4a90e2',
+    borderRadius: 8,
+  },
+  doneButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });
 
 export default function CreateRecipeScreen() {
@@ -217,6 +230,8 @@ export default function CreateRecipeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<string>('ingredients');
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [keyboardPadding, setKeyboardPadding] = useState(0);
 
   // Define the steps for the recipe creation process - simplified for user understanding
   const progressSteps: ProgressStep[] = [
@@ -276,6 +291,31 @@ export default function CreateRecipeScreen() {
   const toggleCuisine = (cuisine: string) => {
     setSelectedCuisine(prev => prev === cuisine ? '' : cuisine);
   };
+
+  // Set up keyboard event listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      // Get the height of the keyboard
+      const keyboardHeight = e.endCoordinates.height;
+      // Set padding to just enough to ensure visibility
+      setKeyboardPadding(keyboardHeight + 10);
+      // Scroll to the end after a short delay
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    });
+
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      // Reset padding when keyboard hides
+      setKeyboardPadding(0);
+    });
+
+    // Clean up listeners
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   // Set up event listeners for AI operations
   useEffect(() => {
@@ -371,10 +411,27 @@ export default function CreateRecipeScreen() {
 
   const isCreateEnabled = ingredients.length > 0 && !isGenerating;
 
+  // Function to handle focusing on the Recipe Hint input
+  const handleRecipeHintFocus = () => {
+    // We'll scroll in the keyboard event listener for better timing
+    // This is just a backup in case the keyboard event doesn't fire properly
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 500);
+  };
+
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container} scrollEnabled={!isGenerating}>
-        <View style={styles.header}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.container}
+            scrollEnabled={!isGenerating}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 20 + keyboardPadding }} // Minimal base padding plus keyboard height
+          >
+            <View style={styles.header}>
           <Text style={styles.title}>
             {mode === 'use-what-i-have' ? 'Create with Your Ingredients' : 'Get Recipe Suggestions'}
           </Text>
@@ -505,7 +562,15 @@ export default function CreateRecipeScreen() {
           placeholder="Add any special requests or preferences..."
           multiline
           numberOfLines={3}
+          returnKeyType="done"
+          onFocus={handleRecipeHintFocus}
         />
+        <TouchableOpacity
+          style={styles.doneButton}
+          onPress={Keyboard.dismiss}
+        >
+          <Text style={styles.doneButtonText}>Done</Text>
+        </TouchableOpacity>
       </BlurView>
 
       {!isGenerating && (
@@ -516,16 +581,18 @@ export default function CreateRecipeScreen() {
           <Text style={styles.createButtonText}>Create Recipe</Text>
         </TouchableOpacity>
       )}
-    </ScrollView>
+            </ScrollView>
+          </View>
+        </TouchableWithoutFeedback>
 
-    {isGenerating && (
-      <ProgressIndicator
-        steps={updatedSteps}
-        currentStepId={currentStep}
-        statusMessage={statusMessage}
-        error={error}
-      />
-    )}
-  </View>
+        {isGenerating && (
+          <ProgressIndicator
+            steps={updatedSteps}
+            currentStepId={currentStep}
+            statusMessage={statusMessage}
+            error={error}
+          />
+        )}
+      </View>
   );
 }
