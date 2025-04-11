@@ -58,6 +58,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     fontSize: 16,
+    color: '#000000',
   },
   multilineInput: {
     height: 80,
@@ -232,6 +233,8 @@ export default function CreateRecipeScreen() {
   const [currentStep, setCurrentStep] = useState<string>('ingredients');
   const scrollViewRef = useRef<ScrollView>(null);
   const [keyboardPadding, setKeyboardPadding] = useState(0);
+  // We'll use a more general approach with refs and measurements
+  const inputRefs = useRef<{[key: string]: any}>({});
 
   // Define the steps for the recipe creation process - simplified for user understanding
   const progressSteps: ProgressStep[] = [
@@ -299,14 +302,13 @@ export default function CreateRecipeScreen() {
       const keyboardHeight = e.endCoordinates.height;
       // Set padding to just enough to ensure visibility
       setKeyboardPadding(keyboardHeight + 10);
-      // Scroll to the end after a short delay
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+
+      // The scrolling will be handled by the input focus handlers
+      // No need to scroll here
     });
 
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      // Reset padding when keyboard hides
+      // Reset all padding when keyboard hides
       setKeyboardPadding(0);
     });
 
@@ -411,13 +413,28 @@ export default function CreateRecipeScreen() {
 
   const isCreateEnabled = ingredients.length > 0 && !isGenerating;
 
-  // Function to handle focusing on the Recipe Hint input
+  // Store input refs for later use
+  const storeInputRef = (inputName: string, inputRef: any) => {
+    if (inputRef) {
+      inputRefs.current[inputName] = inputRef;
+    }
+  };
+
+  // Function to handle Recipe Hint input focus specifically
   const handleRecipeHintFocus = () => {
-    // We'll scroll in the keyboard event listener for better timing
-    // This is just a backup in case the keyboard event doesn't fire properly
+    // Use a simpler approach - just add extra padding at the bottom when the Recipe Hint is focused
+    setKeyboardPadding(prev => prev + 250); // Add extra padding to ensure visibility
+
+    // Scroll to the Recipe Hint input after a short delay
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 500);
+    }, 100);
+  };
+
+  // Function to handle Recipe Hint input blur
+  const handleRecipeHintBlur = () => {
+    // Remove the extra padding when the Recipe Hint input loses focus
+    setKeyboardPadding(prev => Math.max(0, prev - 250)); // Remove the extra padding, but don't go below 0
   };
 
   return (
@@ -450,11 +467,13 @@ export default function CreateRecipeScreen() {
         </View>
         <View style={styles.inputContainer}>
           <TextInput
+            ref={(ref) => ref && storeInputRef('ingredients', ref)}
             style={styles.input}
             value={newIngredient}
             onChangeText={setNewIngredient}
             onSubmitEditing={addIngredient}
             placeholder="Add an ingredient (e.g., '2 cups flour')..."
+            placeholderTextColor="#666666"
             returnKeyType="done"
             editable={!isParsingIngredient}
           />
@@ -554,23 +573,20 @@ export default function CreateRecipeScreen() {
       </BlurView>
 
       <BlurView intensity={20} style={styles.section}>
-        <Text style={styles.sectionTitle}>Recipe Hint</Text>
+        <Text style={styles.sectionTitle}>Recipe Hints</Text>
         <TextInput
+          ref={(ref) => ref && storeInputRef('recipeHint', ref)}
           style={[styles.input, styles.multilineInput]}
           value={recipeHint}
           onChangeText={setRecipeHint}
-          placeholder="Add any special requests or preferences..."
+          placeholder="Try things like: Cook on the grill, I like spicy, etc."
+          placeholderTextColor="#666666"
           multiline
           numberOfLines={3}
           returnKeyType="done"
           onFocus={handleRecipeHintFocus}
+          onBlur={handleRecipeHintBlur}
         />
-        <TouchableOpacity
-          style={styles.doneButton}
-          onPress={Keyboard.dismiss}
-        >
-          <Text style={styles.doneButtonText}>Done</Text>
-        </TouchableOpacity>
       </BlurView>
 
       {!isGenerating && (
