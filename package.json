@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "EXPO_NO_TELEMETRY=1 npx expo start",
     "build:web": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:ios": "eas build --platform ios",
+    "build:ios:simulator": "eas build --platform ios --profile preview",
+    "submit:ios": "eas submit --platform ios"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.0",
@@ -47,6 +50,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~18.3.12",
+    "eas-cli": "^5.9.1",
     "typescript": "^5.3.3"
   }
 }

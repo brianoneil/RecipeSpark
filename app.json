@@ -1,15 +1,22 @@
 {
   "expo": {
-    "name": "bolt-expo-nativewind",
-    "slug": "bolt-expo-nativewind",
+    "name": "RecipeSpark",
+    "slug": "recipe-spark",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "recipespark",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.recipespark",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to take photos of ingredients for recipe suggestions.",
+        "NSMicrophoneUsageDescription": "This app uses the microphone for voice commands when creating recipes.",
+        "NSPhotoLibraryUsageDescription": "This app accesses your photos to let you share images of your recipes."
+      }
     },
     "web": {
       "bundler": "metro",
@@ -19,6 +26,11 @@
     "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
     }
   }
 }
