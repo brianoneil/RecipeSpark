@@ -1,28 +1,21 @@
 import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChefHat, Clock, Users, Utensils, X, Loader as Loader2 } from 'lucide-react-native';
-import type { Recipe } from '@/types/recipe';
-import { z } from 'zod';
 import { useRecipeStore } from '@/store/recipeStore';
 import { recipeService, ingredientService } from '@/services';
 import type { ParsedIngredient } from '@/services/ingredient';
-
-const RequestSchema = z.object({
-  ingredients: z.array(z.string()),
-  servings: z.string(),
-  cuisines: z.array(z.string()),
-  maxTime: z.number(),
-  hint: z.string(),
-  mode: z.enum(['use-what-i-have', 'suggest']),
-});
+import ProgressIndicator, { ProgressStep } from '@/components/ProgressIndicator';
+import { eventService, AIEvent } from '@/services/events';
 
 export default function CreateRecipeScreen() {
   const { setCurrentRecipe } = useRecipeStore();
   const params = useLocalSearchParams();
   const mode = params.mode as 'use-what-i-have' | 'suggest';
-  
+
+  // No need for navigation ref anymore
+
   const [ingredients, setIngredients] = useState<ParsedIngredient[]>([]);
   const [newIngredient, setNewIngredient] = useState('');
   const [servings, setServings] = useState(4);
@@ -33,19 +26,47 @@ export default function CreateRecipeScreen() {
   const [isParsingIngredient, setIsParsingIngredient] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState<string>('ingredients');
+
+  // Define the steps for the recipe creation process - simplified for user understanding
+  const progressSteps: ProgressStep[] = [
+    { id: 'ingredients', label: 'Ingredients', status: 'completed' },
+    { id: 'recipe-generation', label: 'Creating Recipe', status: 'waiting' },
+    { id: 'image-generation', label: 'Adding Image', status: 'waiting' },
+  ];
+
+  // Update the steps based on the current step
+  const updatedSteps = progressSteps.map(step => {
+    let status: 'waiting' | 'in-progress' | 'completed' | 'error' = 'waiting';
+
+    if (step.id === currentStep) {
+      status = error ? 'error' : 'in-progress';
+    } else if (progressSteps.findIndex(s => s.id === step.id) < progressSteps.findIndex(s => s.id === currentStep)) {
+      status = 'completed';
+    }
+
+    return {
+      ...step,
+      status
+    };
+  });
 
   const cuisineTypes = [
-    'Italian', 'Chinese', 'Mexican', 'Indian', 'Japanese', 
+    'Italian', 'Chinese', 'Mexican', 'Indian', 'Japanese',
     'Thai', 'French', 'Mediterranean', 'American', 'Korean'
   ];
 
   const addIngredient = async () => {
     if (newIngredient.trim()) {
       setIsParsingIngredient(true);
+      setStatusMessage(`Parsing ingredient: ${newIngredient.trim()}`);
       try {
         const parsedIngredients = await ingredientService.parseIngredient(newIngredient.trim());
         if (parsedIngredients.length > 0) {
           setIngredients(prev => [...prev, ...parsedIngredients]);
+          setStatusMessage(`Added: ${parsedIngredients.map(ing => ing.name).join(', ')}`);
+          // Clear status message after a short delay
+          setTimeout(() => setStatusMessage(null), 1500);
         }
       } catch (error) {
         console.error('Failed to parse ingredients:', error);
@@ -63,21 +84,71 @@ export default function CreateRecipeScreen() {
   };
 
   const toggleCuisine = (cuisine: string) => {
-    setSelectedCuisines(prev => 
+    setSelectedCuisines(prev =>
       prev.includes(cuisine)
         ? prev.filter(c => c !== cuisine)
         : [...prev, cuisine]
     );
   };
 
+  // Set up event listeners for AI operations
+  useEffect(() => {
+    // Set up event listeners - simplified for better user experience
+    const listeners = [
+      // Combine prompt and generation events into a single 'Creating Recipe' step
+      eventService.subscribe(AIEvent.RECIPE_PROMPT_START, () => {
+        setCurrentStep('recipe-generation');
+        setStatusMessage('Creating your personalized recipe...');
+      }),
+
+      eventService.subscribe(AIEvent.RECIPE_GENERATION_START, () => {
+        setCurrentStep('recipe-generation');
+        setStatusMessage('Creating your personalized recipe...');
+      }),
+
+      eventService.subscribe(AIEvent.RECIPE_GENERATION_COMPLETE, () => {
+        setStatusMessage('Recipe created! Adding an image...');
+      }),
+
+      // Combine image prompt and generation into a single 'Adding Image' step
+      eventService.subscribe(AIEvent.IMAGE_PROMPT_START, () => {
+        setCurrentStep('image-generation');
+        setStatusMessage('Adding a beautiful image to your recipe...');
+      }),
+
+      eventService.subscribe(AIEvent.IMAGE_GENERATION_START, () => {
+        setCurrentStep('image-generation');
+        setStatusMessage('Adding a beautiful image to your recipe...');
+      }),
+
+      // Handle completion and navigation
+      eventService.subscribe(AIEvent.IMAGE_GENERATION_COMPLETE, () => {
+        console.log('💬 IMAGE_GENERATION_COMPLETE event received, preparing to redirect...');
+        setStatusMessage('Recipe complete! Opening recipe...');
+
+        // Redirect immediately
+        setIsGenerating(false);
+        router.push('/recipe/view');
+      }),
+
+      eventService.subscribe(AIEvent.ERROR, (data) => {
+        setError(data?.message || 'An error occurred during recipe creation');
+      })
+    ];
+
+    // Clean up listeners on unmount
+    return () => {
+      listeners.forEach(unsubscribe => unsubscribe());
+    };
+  }, []);
+
   const handleCreateRecipe = async () => {
     console.log('🚀 Starting recipe creation process');
-    
+
     try {
       setIsGenerating(true);
       setError(null);
-      setStatusMessage('Preparing recipe request...');
-      
+
       const recipeRequest = {
         ingredients: ingredients.map(ing => ing.name),
         servings: servings.toString(),
@@ -87,17 +158,28 @@ export default function CreateRecipeScreen() {
         mode,
       };
 
+      // Call the recipe service to generate the recipe
+      // The events will be emitted by the service and handled by our listeners
       const recipe = await recipeService.generateRecipe(recipeRequest);
-      
-      setStatusMessage('Recipe generated! Redirecting...');
+
+      // Store the recipe in the store so it's available when we redirect
       setCurrentRecipe(recipe);
-      router.push('/recipe/view');
+
+      // The redirection will be handled by the IMAGE_GENERATION_COMPLETE event listener
+
+      // Add a simple safety timeout in case the image generation takes too long
+      setTimeout(() => {
+        if (isGenerating) {
+          console.log('⚠️ Safety timeout triggered - redirecting to view');
+          setIsGenerating(false);
+          router.push('/recipe/view');
+        }
+      }, 15000); // 15 seconds safety timeout
+
     } catch (error) {
       console.error('❌ Recipe creation error:', error);
       setError(error instanceof Error ? error.message : 'Failed to generate recipe. Please try again.');
-    } finally {
       setIsGenerating(false);
-      setStatusMessage(null);
     }
   };
 
@@ -111,15 +193,18 @@ export default function CreateRecipeScreen() {
         </Text>
       </View>
 
-      {error && (
-        <BlurView intensity={20} style={styles.errorSection}>
-          <Text style={styles.errorText}>{error}</Text>
-        </BlurView>
+      {isGenerating && (
+        <ProgressIndicator
+          steps={updatedSteps}
+          currentStepId={currentStep}
+          statusMessage={statusMessage}
+          error={error}
+        />
       )}
 
-      {statusMessage && (
-        <BlurView intensity={20} style={styles.statusSection}>
-          <Text style={styles.statusText}>{statusMessage}</Text>
+      {!isGenerating && error && (
+        <BlurView intensity={20} style={styles.errorSection}>
+          <Text style={styles.errorText}>{error}</Text>
         </BlurView>
       )}
 
@@ -144,11 +229,18 @@ export default function CreateRecipeScreen() {
             </View>
           )}
         </View>
+
+        {isParsingIngredient && statusMessage && (
+          <View style={styles.parsingStatus}>
+            <Text style={styles.parsingStatusText}>{statusMessage}</Text>
+          </View>
+        )}
+
         <View style={styles.ingredientsList}>
           {ingredients.map(ingredient => (
             <View key={ingredient.id} style={styles.ingredientChip}>
               <Text style={styles.ingredientText}>
-                {ingredient.quantity && ingredient.unit 
+                {ingredient.quantity && ingredient.unit
                   ? `${ingredient.quantity} ${ingredient.unit} ${ingredient.name}`
                   : ingredient.name}
               </Text>
@@ -166,13 +258,13 @@ export default function CreateRecipeScreen() {
           <Text style={styles.sectionTitle}>Serving Size</Text>
         </View>
         <View style={styles.servingControls}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.servingButton}
             onPress={() => setServings(prev => Math.max(1, prev - 1))}>
             <Text style={styles.servingButtonText}>-</Text>
           </TouchableOpacity>
           <Text style={styles.servingCount}>{servings} people</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.servingButton}
             onPress={() => setServings(prev => prev + 1)}>
             <Text style={styles.servingButtonText}>+</Text>
@@ -185,8 +277,8 @@ export default function CreateRecipeScreen() {
           <Utensils size={24} color="#000" />
           <Text style={styles.sectionTitle}>Cuisine Type</Text>
         </View>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.cuisineScroll}>
           {cuisineTypes.map(cuisine => (
@@ -212,13 +304,13 @@ export default function CreateRecipeScreen() {
           <Text style={styles.sectionTitle}>Maximum Time</Text>
         </View>
         <View style={styles.timeControls}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.timeButton}
             onPress={() => setMaxTime(prev => Math.max(15, prev - 15))}>
             <Text style={styles.timeButtonText}>-15 min</Text>
           </TouchableOpacity>
           <Text style={styles.timeValue}>{maxTime} minutes</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.timeButton}
             onPress={() => setMaxTime(prev => prev + 15)}>
             <Text style={styles.timeButtonText}>+15 min</Text>
@@ -238,19 +330,14 @@ export default function CreateRecipeScreen() {
         />
       </BlurView>
 
-      <TouchableOpacity 
-        style={[styles.createButton, !isCreateEnabled && styles.createButtonDisabled]}
-        disabled={!isCreateEnabled}
-        onPress={handleCreateRecipe}>
-        {isGenerating ? (
-          <View style={styles.loadingContainer}>
-            <Loader2 size={24} color="#fff" style={styles.spinner} />
-            <Text style={styles.createButtonText}>Creating Recipe...</Text>
-          </View>
-        ) : (
+      {!isGenerating && (
+        <TouchableOpacity
+          style={[styles.createButton, !isCreateEnabled && styles.createButtonDisabled]}
+          disabled={!isCreateEnabled}
+          onPress={handleCreateRecipe}>
           <Text style={styles.createButtonText}>Create Recipe</Text>
-        )}
-      </TouchableOpacity>
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 }
@@ -281,18 +368,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
-  statusSection: {
-    margin: 20,
-    marginTop: 0,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: 'rgba(100, 100, 255, 0.3)',
-  },
-  statusText: {
-    color: '#000080',
-    fontSize: 16,
-    textAlign: 'center',
-  },
+
   section: {
     margin: 20,
     marginTop: 10,
@@ -418,14 +494,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  spinner: {
-    transform: [{ rotate: '360deg' }],
-  },
+
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -435,5 +504,30 @@ const styles = StyleSheet.create({
     right: 12,
     top: '50%',
     transform: [{ translateY: -10 }],
+  },
+  parsingStatus: {
+    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  parsingStatusText: {
+    color: '#4a90e2',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  manualLink: {
+    backgroundColor: '#4a90e2',
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  manualLinkText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

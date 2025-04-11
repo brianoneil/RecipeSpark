@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { Recipe, RecipeSchema } from '@/types/recipe';
 import { OpenRouterService } from './openrouter';
 import { ImageService } from './image';
+import { eventService, AIEvent } from './events';
 
 const RequestSchema = z.object({
   ingredients: z.array(z.string()),
@@ -116,8 +117,13 @@ NEVER use null for unit fields. Always use an empty string "" instead of null wh
     // Validate request
     RequestSchema.parse(request);
 
+    // Emit event for recipe prompt creation
+    eventService.emit(AIEvent.RECIPE_PROMPT_START);
     const systemPrompt = this.buildSystemPrompt(request);
+    eventService.emit(AIEvent.RECIPE_PROMPT_COMPLETE);
 
+    // Emit event for recipe generation
+    eventService.emit(AIEvent.RECIPE_GENERATION_START);
     console.log('📤 Making recipe request with model:', this.recipeModel);
     const response = await this.openRouter.chat(
       this.recipeModel,
@@ -126,6 +132,7 @@ NEVER use null for unit fields. Always use an empty string "" instead of null wh
         { role: 'user', content: 'Generate a recipe based on the given requirements.' }
       ]
     );
+    eventService.emit(AIEvent.RECIPE_GENERATION_COMPLETE);
 
     if (!response.choices?.[0]?.message?.content) {
       throw new Error('Invalid response from API');

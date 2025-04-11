@@ -1,5 +1,6 @@
 import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Clock, Users, ChefHat, ShoppingBag } from 'lucide-react-native';
 import { useRecipeStore } from '@/store/recipeStore';
@@ -13,7 +14,7 @@ export default function RecipeViewScreen() {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>No recipe found. Please generate a recipe first.</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Go Back</Text>
@@ -25,11 +26,16 @@ export default function RecipeViewScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.imageContainer}>
-        <Image 
+        <Image
           source={{ uri: currentRecipe.image?.[0] || PLACEHOLDER_IMAGE }}
           style={styles.image}
+          resizeMode="cover"
         />
-        <BlurView intensity={80} style={styles.overlay}>
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.3)', 'rgba(255,255,255,0.9)']}
+          style={styles.gradient}
+        />
+        <BlurView intensity={50} style={styles.overlay}>
           <Text style={styles.title}>{currentRecipe.name}</Text>
           {currentRecipe.description && (
             <Text style={styles.description}>{currentRecipe.description}</Text>
@@ -111,12 +117,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },
   imageContainer: {
-    height: 300,
+    height: 450, // Increased from 300 to show more of the image
     position: 'relative',
+    overflow: 'hidden', // Ensure image stays within container
   },
   image: {
     width: '100%',
     height: '100%',
+  },
+  gradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '70%', // Gradient covers 70% of the image from bottom
   },
   overlay: {
     position: 'absolute',
@@ -124,17 +138,26 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingTop: 25, // Add more padding at the top for better spacing
+    backgroundColor: 'rgba(255, 255, 255, 0.5)', // More transparent with gradient
   },
   title: {
-    fontSize: 28,
+    fontSize: 30, // Slightly larger
     fontWeight: 'bold',
     color: '#000',
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    marginBottom: 4, // Add some space between title and description
   },
   description: {
     fontSize: 16,
-    color: '#666',
+    color: '#333', // Darker color for better contrast
     marginTop: 8,
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 0.5, height: 0.5 },
+    textShadowRadius: 2,
+    lineHeight: 22, // Improve readability with better line height
   },
   infoContainer: {
     flexDirection: 'row',

@@ -1,4 +1,5 @@
 import { OpenRouterService } from './openrouter';
+import { eventService, AIEvent } from './events';
 
 export interface ImageGenerationConfig {
   recipeModel: string;
@@ -37,16 +38,22 @@ export class ImageService {
     try {
       // First, generate a detailed image prompt using the recipe model
       console.log('📸 Generating detailed image prompt...');
+      eventService.emit(AIEvent.IMAGE_PROMPT_START);
       const imagePrompt = await this.generateImagePrompt(recipe);
+      eventService.emit(AIEvent.IMAGE_PROMPT_COMPLETE);
 
       // Then, use that prompt to generate the image with the image model
       console.log('📸 Generating image with detailed prompt...');
-      return this.generateImage(imagePrompt);
+      eventService.emit(AIEvent.IMAGE_GENERATION_START);
+      // The IMAGE_GENERATION_COMPLETE event will be emitted in the generateHuggingFaceImage method
+      const imageUrl = await this.generateImage(imagePrompt);
+      return imageUrl;
     } catch (promptError) {
       console.error('❌ Error in image prompt generation:', promptError);
 
       // Fallback to a simple prompt if the detailed one fails
       console.log('📸 Using fallback prompt for image generation...');
+      eventService.emit(AIEvent.IMAGE_PROMPT_COMPLETE, { usedFallback: true });
 
       let fallbackPrompt: string;
 
@@ -64,7 +71,10 @@ Style: Professional food photography, overhead shot, natural lighting, styled on
 
       try {
         console.log('📸 Generating image with fallback prompt...');
-        return this.generateImage(fallbackPrompt);
+        eventService.emit(AIEvent.IMAGE_GENERATION_START, { usedFallback: true });
+        // The IMAGE_GENERATION_COMPLETE event will be emitted in the generateHuggingFaceImage method
+        const imageUrl = await this.generateImage(fallbackPrompt);
+        return imageUrl;
       } catch (fallbackError) {
         console.error('❌ Error in fallback image generation:', fallbackError);
 
@@ -77,9 +87,13 @@ Style: Professional food photography, overhead shot, natural lighting, styled on
 
         try {
           console.log('📸 Final attempt at image generation...');
-          return this.generateImage(minimalPrompt);
+          eventService.emit(AIEvent.IMAGE_GENERATION_START, { usedMinimalFallback: true });
+          // The IMAGE_GENERATION_COMPLETE event will be emitted in the generateHuggingFaceImage method
+          const imageUrl = await this.generateImage(minimalPrompt);
+          return imageUrl;
         } catch (finalError) {
           console.error('❌ All image generation attempts failed:', finalError);
+          eventService.emit(AIEvent.ERROR, { message: 'Failed to generate recipe image after multiple attempts' });
           throw new Error('Failed to generate recipe image after multiple attempts');
         }
       }
@@ -315,6 +329,11 @@ Style: Professional food photography, overhead shot, natural lighting, styled on
           reader.onloadend = () => {
             const result = reader.result as string;
             console.log('📸 Data URL generated, length:', result?.length || 0);
+
+            // Make sure we emit the event after the data URL is generated
+            console.log('📸 Emitting IMAGE_GENERATION_COMPLETE event');
+            eventService.emit(AIEvent.IMAGE_GENERATION_COMPLETE);
+
             resolve(result);
           };
           reader.onerror = (error) => {
