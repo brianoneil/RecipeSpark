@@ -1,0 +1,248 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.com/recipe.schema.json",
+    "title": "Recipe",
+    "type": "object",
+    "required": [
+        "@type",
+        "name",
+        "recipeIngredient",
+        "recipeInstructions"
+    ],
+    "properties": {
+        "@context": {
+            "type": "string",
+            "const": "https://schema.org"
+        },
+        "@type": {
+            "type": "string",
+            "const": "Recipe"
+        },
+        "name": {
+            "type": "string",
+            "description": "The title of the recipe"
+        },
+        "description": {
+            "type": "string"
+        },
+        "image": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "format": "uri"
+            }
+        },
+        "recipeCuisine": {
+            "type": "string"
+        },
+        "recipeCategory": {
+            "type": "string"
+        },
+        "keywords": {
+            "type": "string"
+        },
+        "recipeYield": {
+            "type": "string"
+        },
+        "prepTime": {
+            "type": "string",
+            "format": "duration"
+        },
+        "cookTime": {
+            "type": "string",
+            "format": "duration"
+        },
+        "totalTime": {
+            "type": "string",
+            "format": "duration"
+        },
+        "recipeIngredient": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "ingredients": {
+            "type": "object",
+            "properties": {
+                "used": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/ingredient"
+                    }
+                },
+                "missing": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/ingredient"
+                    }
+                },
+                "suggested": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/ingredient"
+                    }
+                }
+            }
+        },
+        "shoppingList": {
+            "type": "object",
+            "description": "Ingredients the user needs to buy",
+            "required": [
+                "items"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "name",
+                            "requiredQuantity",
+                            "purchaseQuantity",
+                            "purchaseUnit"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "requiredQuantity": {
+                                "type": "object",
+                                "required": [
+                                    "amount",
+                                    "unit"
+                                ],
+                                "properties": {
+                                    "amount": {
+                                        "type": "number"
+                                    },
+                                    "unit": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "purchaseQuantity": {
+                                "type": "number",
+                                "description": "How many of the purchase unit to buy (e.g. 1 bag)"
+                            },
+                            "purchaseUnit": {
+                                "type": "string",
+                                "description": "The unit the item is typically sold in (e.g. bag, bunch, box)"
+                            },
+                            "purchaseNote": {
+                                "type": "string",
+                                "description": "Optional guidance, like 'get organic if possible'"
+                            }
+                        }
+                    }
+                },
+                "totalItems": {
+                    "type": "integer"
+                }
+            }
+        },
+        "recipeInstructions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "@type",
+                    "text"
+                ],
+                "properties": {
+                    "@type": {
+                        "type": "string",
+                        "const": "HowToStep"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "durationMinutes": {
+                        "type": "integer"
+                    },
+                    "timer": {
+                        "type": "boolean"
+                    },
+                    "step": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "nutrition": {
+            "$ref": "#/$defs/nutrition"
+        },
+        "userFeedback": {
+            "type": "object",
+            "properties": {
+                "liked": {
+                    "type": "boolean"
+                },
+                "notes": {
+                    "type": "string"
+                }
+            }
+        },
+        "diet": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "$defs": {
+        "ingredient": {
+            "type": "object",
+            "required": [
+                "name",
+                "quantity",
+                "unit"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "unit": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                }
+            }
+        },
+        "nutrition": {
+            "type": "object",
+            "properties": {
+                "@type": {
+                    "type": "string",
+                    "const": "NutritionInformation"
+                },
+                "calories": {
+                    "type": "string"
+                },
+                "proteinContent": {
+                    "type": "string"
+                },
+                "carbohydrateContent": {
+                    "type": "string"
+                },
+                "fatContent": {
+                    "type": "string"
+                },
+                "fiberContent": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
