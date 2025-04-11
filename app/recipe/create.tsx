@@ -472,7 +472,7 @@ export default function CreateRecipeScreen() {
             value={newIngredient}
             onChangeText={setNewIngredient}
             onSubmitEditing={addIngredient}
-            placeholder="Add an ingredient (e.g., '2 cups flour')..."
+            placeholder="Add an ingredient (e.g., 'Chicken, Garlic, Tomato')..."
             placeholderTextColor="#666666"
             returnKeyType="done"
             editable={!isParsingIngredient}
