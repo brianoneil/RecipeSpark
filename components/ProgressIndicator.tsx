@@ -146,6 +146,11 @@ const styles = StyleSheet.create({
     width: '90%',
     maxWidth: 500,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
   progressBarContainer: {
     height: 6,

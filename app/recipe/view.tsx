@@ -32,7 +32,7 @@ export default function RecipeViewScreen() {
           resizeMode="cover"
         />
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.3)', 'rgba(255,255,255,0.9)']}
+          colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(255,255,255,0.8)']}
           style={styles.gradient}
         />
         <BlurView intensity={50} style={styles.overlay}>
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },
   imageContainer: {
-    height: 450, // Increased from 300 to show more of the image
+    height: 550, // Increased from 450 to show even more of the image
     position: 'relative',
     overflow: 'hidden', // Ensure image stays within container
   },
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: '70%', // Gradient covers 70% of the image from bottom
+    height: '60%', // Reduced from 70% to show more of the image clearly
   },
   overlay: {
     position: 'absolute',
@@ -139,24 +139,24 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 20,
     paddingTop: 25, // Add more padding at the top for better spacing
-    backgroundColor: 'rgba(255, 255, 255, 0.5)', // More transparent with gradient
+    backgroundColor: 'rgba(255, 255, 255, 0.4)', // More transparent to see more of the image
   },
   title: {
-    fontSize: 30, // Slightly larger
+    fontSize: 32, // Increased size for better visibility
     fontWeight: 'bold',
     color: '#000',
-    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowColor: 'rgba(255, 255, 255, 1)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    textShadowRadius: 4,
     marginBottom: 4, // Add some space between title and description
   },
   description: {
     fontSize: 16,
-    color: '#333', // Darker color for better contrast
+    color: '#222', // Even darker color for better contrast
     marginTop: 8,
-    textShadowColor: 'rgba(255, 255, 255, 0.8)',
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 2,
+    textShadowColor: 'rgba(255, 255, 255, 1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
     lineHeight: 22, // Improve readability with better line height
   },
   infoContainer: {

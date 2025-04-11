@@ -209,7 +209,7 @@ export default function CreateRecipeScreen() {
   const [ingredients, setIngredients] = useState<ParsedIngredient[]>([]);
   const [newIngredient, setNewIngredient] = useState('');
   const [servings, setServings] = useState(4);
-  const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
+  const [selectedCuisine, setSelectedCuisine] = useState<string>('');
   const [maxTime, setMaxTime] = useState(30);
   const [recipeHint, setRecipeHint] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -274,11 +274,7 @@ export default function CreateRecipeScreen() {
   };
 
   const toggleCuisine = (cuisine: string) => {
-    setSelectedCuisines(prev =>
-      prev.includes(cuisine)
-        ? prev.filter(c => c !== cuisine)
-        : [...prev, cuisine]
-    );
+    setSelectedCuisine(prev => prev === cuisine ? '' : cuisine);
   };
 
   // Set up event listeners for AI operations
@@ -342,7 +338,7 @@ export default function CreateRecipeScreen() {
       const recipeRequest = {
         ingredients: ingredients.map(ing => ing.name),
         servings: servings.toString(),
-        cuisines: selectedCuisines,
+        cuisines: selectedCuisine ? [selectedCuisine] : [],
         maxTime,
         hint: recipeHint,
         mode,
@@ -468,12 +464,12 @@ export default function CreateRecipeScreen() {
               key={cuisine}
               style={[
                 styles.cuisineChip,
-                selectedCuisines.includes(cuisine) && styles.cuisineChipSelected
+                selectedCuisine === cuisine && styles.cuisineChipSelected
               ]}
               onPress={() => toggleCuisine(cuisine)}>
               <Text style={[
                 styles.cuisineText,
-                selectedCuisines.includes(cuisine) && styles.cuisineTextSelected
+                selectedCuisine === cuisine && styles.cuisineTextSelected
               ]}>{cuisine}</Text>
             </TouchableOpacity>
           ))}
