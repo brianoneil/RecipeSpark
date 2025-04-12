@@ -1,15 +1,16 @@
-import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { Colors, BlurIntensities } from '@/constants/Colors';
-import { BlurView } from 'expo-blur';
+import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
+import { Colors } from '@/constants/Colors';
 import BackgroundGradient from '@/components/BackgroundGradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Header from '@/components/Header';
+import GlassPanel from '@/components/GlassPanel';
 import { useLocalSearchParams, router } from 'expo-router';
 import React, { useState, useEffect, useRef } from 'react';
 import { ChefHat, Clock, Users, Utensils, X, Loader as Loader2 } from 'lucide-react-native';
 import { useRecipeStore } from '@/store/recipeStore';
 import { recipeService, ingredientService } from '@/services';
 import type { ParsedIngredient } from '@/services/ingredient';
-import ProgressIndicator, { ProgressStep } from '@/components/ProgressIndicator';
+import ProgressIndicator from '@/components/ProgressIndicator';
 import { eventService, AIEvent } from '@/services/events';
 
 const styles = StyleSheet.create({
@@ -77,6 +78,8 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.borderMedium,
     overflow: 'hidden',
+    flex: 1,
+    width: '100%',
   },
   multilineInput: {
     height: 80,
@@ -208,6 +211,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
   },
   parsingIndicator: {
     position: 'absolute',
@@ -272,7 +276,7 @@ export default function CreateRecipeScreen() {
   const { setCurrentRecipe } = useRecipeStore();
   const params = useLocalSearchParams();
   const mode = params.mode as string || 'default';
-  const insets = useSafeAreaInsets();
+  // const insets = useSafeAreaInsets();
 
   const [ingredients, setIngredients] = useState('');
   const [parsedIngredients, setParsedIngredients] = useState<ParsedIngredient[]>([]);
@@ -284,10 +288,17 @@ export default function CreateRecipeScreen() {
   const [recipeHint, setRecipeHint] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
-  const [currentStep, setCurrentStep] = useState<ProgressStep | null>(null);
+  const [currentStep, setCurrentStep] = useState<string | null>(null);
+
+  // Define progress steps
+  const progressSteps = [
+    { id: 'prompt', label: 'Creating Prompt', status: 'waiting' },
+    { id: 'recipe', label: 'Generating Recipe', status: 'waiting' },
+    { id: 'image', label: 'Creating Image', status: 'waiting' },
+  ] as const;
   const [keyboardPadding, setKeyboardPadding] = useState(0);
 
-  // const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
   const inputRefs = useRef<{ [key: string]: TextInput }>({});
 
   const cuisineTypes = [
@@ -300,26 +311,19 @@ export default function CreateRecipeScreen() {
     inputRefs.current[key] = ref;
   };
 
-  // Parse ingredients when input changes
-  useEffect(() => {
-    const parseIngredientsDebounced = setTimeout(async () => {
-      if (ingredients.trim().length > 0) {
-        setIsParsing(true);
-        try {
-          const parsed = await ingredientService.parseIngredients(ingredients);
-          setParsedIngredients(parsed);
-        } catch (err) {
-          console.error('Error parsing ingredients:', err);
-        } finally {
-          setIsParsing(false);
-        }
-      } else {
-        setParsedIngredients([]);
-      }
-    }, 500);
+  // We now parse ingredients only when the user presses return
 
-    return () => clearTimeout(parseIngredientsDebounced);
-  }, [ingredients]);
+  // Focus the ingredients input when the component mounts
+  useEffect(() => {
+    // Short delay to ensure the ref is set
+    const timer = setTimeout(() => {
+      if (inputRefs.current.ingredients) {
+        inputRefs.current.ingredients.focus();
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Handle keyboard events to adjust padding
   useEffect(() => {
@@ -330,10 +334,8 @@ export default function CreateRecipeScreen() {
         const keyboardHeight = event.endCoordinates.height;
         setKeyboardPadding(keyboardHeight);
 
-        // // Scroll to the bottom when keyboard appears
-        // setTimeout(() => {
-        //   scrollViewRef.current?.scrollToEnd({ animated: true });
-        // }, 100);
+        //scroll up by the keyboard height
+        // scrollViewRef.current?.scrollTo({ y: keyboardHeight, animated: true });
       }
     );
 
@@ -354,33 +356,31 @@ export default function CreateRecipeScreen() {
   // Subscribe to AI events
   useEffect(() => {
     const listeners = [
-      eventService.subscribe(AIEvent.PROMPT_CREATION_STARTED, () => {
+      eventService.subscribe(AIEvent.RECIPE_PROMPT_START, () => {
         setCurrentStep('prompt');
         setStatusMessage('Creating recipe prompt...');
       }),
-      eventService.subscribe(AIEvent.PROMPT_CREATION_COMPLETED, () => {
+      eventService.subscribe(AIEvent.RECIPE_PROMPT_COMPLETE, () => {
         setStatusMessage('Recipe prompt created');
       }),
-      eventService.subscribe(AIEvent.RECIPE_GENERATION_STARTED, () => {
+      eventService.subscribe(AIEvent.RECIPE_GENERATION_START, () => {
         setCurrentStep('recipe');
         setStatusMessage('Generating recipe...');
       }),
-      eventService.subscribe(AIEvent.RECIPE_GENERATION_COMPLETED, () => {
+      eventService.subscribe(AIEvent.RECIPE_GENERATION_COMPLETE, () => {
         setStatusMessage('Recipe generated');
       }),
-      eventService.subscribe(AIEvent.IMAGE_GENERATION_STARTED, () => {
+      eventService.subscribe(AIEvent.IMAGE_GENERATION_START, () => {
         setCurrentStep('image');
         setStatusMessage('Generating image...');
       }),
-      eventService.subscribe(AIEvent.IMAGE_GENERATION_COMPLETED, () => {
+      eventService.subscribe(AIEvent.IMAGE_GENERATION_COMPLETE, () => {
         setStatusMessage('Image generated');
-      }),
-      eventService.subscribe(AIEvent.PROCESS_COMPLETED, () => {
         setIsGenerating(false);
         setCurrentStep(null);
         setStatusMessage('');
       }),
-      eventService.subscribe(AIEvent.ERROR_OCCURRED, (error: string) => {
+      eventService.subscribe(AIEvent.ERROR, (error: string) => {
         setError(error);
         setIsGenerating(false);
         setCurrentStep(null);
@@ -400,10 +400,11 @@ export default function CreateRecipeScreen() {
 
       const recipe = await recipeService.generateRecipe({
         ingredients: parsedIngredients.map(i => i.name),
-        servings,
-        maxTimeMinutes: maxTime,
-        cuisineType: selectedCuisine || undefined,
-        recipeHint: recipeHint || undefined,
+        servings: servings.toString(),
+        maxTime: maxTime,
+        cuisines: selectedCuisine ? [selectedCuisine] : [],
+        hint: recipeHint || '',
+        mode: mode === 'use-what-i-have' ? 'use-what-i-have' : 'suggest',
       });
 
       setCurrentRecipe(recipe);
@@ -423,26 +424,37 @@ export default function CreateRecipeScreen() {
     }
   };
 
+  // Function to handle adding an ingredient when the user presses return
+  const handleAddIngredient = async () => {
+    if (ingredients.trim().length === 0) return;
+
+    setIsParsing(true);
+    try {
+      const parsed = await ingredientService.parseIngredient(ingredients);
+      // Add new ingredients to the existing list
+      setParsedIngredients(prev => [...prev, ...parsed]);
+      // Clear the input field
+      setIngredients('');
+      // Keep focus on the input with a slight delay to ensure it works after state updates
+      setTimeout(() => {
+        if (inputRefs.current.ingredients) {
+          inputRefs.current.ingredients.focus();
+        }
+      }, 50);
+    } catch (err) {
+      console.error('Error parsing ingredients:', err);
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
   const removeIngredient = (index: number) => {
     const newParsedIngredients = [...parsedIngredients];
     newParsedIngredients.splice(index, 1);
     setParsedIngredients(newParsedIngredients);
-
-    // Update the text input to match the remaining ingredients
-    setIngredients(newParsedIngredients.map(i => i.original || i.name).join(', '));
   };
 
-  // Function to handle manual ingredient entry
-  const handleManualEntry = () => {
-    setIsParsing(false);
-    setParsedIngredients([]);
-    setIngredients('');
 
-    // Focus the ingredients input
-    if (inputRefs.current.ingredients) {
-      inputRefs.current.ingredients.focus();
-    }
-  };
 
   // Function to handle done button press
   const handleDonePress = () => {
@@ -466,25 +478,28 @@ export default function CreateRecipeScreen() {
         {/* <TouchableWithoutFeedback onPress={Keyboard.dismiss}> */}
           <View style={{ flex: 1 }}>
             <ScrollView
-              // ref={scrollViewRef}
-              // style={styles.container}
-              //scrollEnabled={!isGenerating}
+              ref={scrollViewRef}
+              style={styles.container}
+              scrollEnabled={!isGenerating}
               // keyboardShouldPersistTaps="handled"
               contentContainerStyle={{ paddingBottom: 20 + keyboardPadding }} // Padding for keyboard
             >
-              <View style={styles.header}>
-                <Text style={styles.title}>
-                  {mode === 'use-what-i-have' ? 'Create with Your Ingredients' : 'Get Recipe Suggestions'}
-                </Text>
-              </View>
+              <Header
+                title={mode === 'use-what-i-have' ? 'Create a Recipe' : 'Create a Recipe'}
+                subtitle={mode === 'use-what-i-have' ? 'Make a recipe from what you have' : 'Discover new recipe ideas'}
+                showBackButton
+                showIcon={true}
+              />
+
+              <View style={{ height: 16 }} />
 
               {!isGenerating && error && (
-                <BlurView intensity={BlurIntensities.card} style={styles.errorSection}>
+                <GlassPanel style={styles.errorSection}>
                   <Text style={styles.errorText}>{error}</Text>
-                </BlurView>
+                </GlassPanel>
               )}
 
-              <BlurView intensity={BlurIntensities.card} style={styles.section}>
+              <GlassPanel style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <ChefHat size={24} color={Colors.primary} />
                   <Text style={styles.sectionTitle}>Ingredients</Text>
@@ -493,11 +508,14 @@ export default function CreateRecipeScreen() {
                   <TextInput
                     ref={(ref) => ref && storeInputRef('ingredients', ref)}
                     style={styles.input}
-                    placeholder="Add an ingredient (e.g. chicken, garlic, rice)"
+                    placeholder="Add an ingredient and press return"
                     placeholderTextColor="rgba(255, 255, 255, 0.5)"
                     value={ingredients}
                     onChangeText={setIngredients}
+                    onSubmitEditing={handleAddIngredient}
+                    returnKeyType="done"
                     editable={!isGenerating}
+                    autoFocus={true}
                   />
                   {isParsing && (
                     <View style={styles.parsingIndicator}>
@@ -525,14 +543,10 @@ export default function CreateRecipeScreen() {
                   </View>
                 )}
 
-                {parsedIngredients.length === 0 && !isParsing && ingredients.trim().length > 0 && (
-                  <TouchableOpacity style={styles.manualLink} onPress={handleManualEntry}>
-                    <Text style={styles.manualLinkText}>Clear and try again</Text>
-                  </TouchableOpacity>
-                )}
-              </BlurView>
 
-              <BlurView intensity={BlurIntensities.card} style={styles.section}>
+              </GlassPanel>
+
+              <GlassPanel style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Users size={24} color={Colors.primary} />
                   <Text style={styles.sectionTitle}>Serving Size</Text>
@@ -550,9 +564,9 @@ export default function CreateRecipeScreen() {
                     <Text style={styles.servingButtonText}>+</Text>
                   </TouchableOpacity>
                 </View>
-              </BlurView>
+              </GlassPanel>
 
-              <BlurView intensity={BlurIntensities.card} style={styles.section}>
+              <GlassPanel style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Utensils size={24} color={Colors.primary} />
                   <Text style={styles.sectionTitle}>Cuisine Type</Text>
@@ -576,9 +590,9 @@ export default function CreateRecipeScreen() {
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
-              </BlurView>
+              </GlassPanel>
 
-              <BlurView intensity={BlurIntensities.card} style={styles.section}>
+              <GlassPanel style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Clock size={24} color={Colors.primary} />
                   <Text style={styles.sectionTitle}>Maximum Time</Text>
@@ -596,9 +610,9 @@ export default function CreateRecipeScreen() {
                     <Text style={styles.timeButtonText}>+15 min</Text>
                   </TouchableOpacity>
                 </View>
-              </BlurView>
+              </GlassPanel>
 
-              <BlurView intensity={BlurIntensities.medium} style={styles.section}>
+              <GlassPanel style={styles.section}>
                 <Text style={styles.sectionTitle}>Recipe Hints</Text>
                 <TextInput
                   ref={(ref) => ref && storeInputRef('recipeHint', ref)}
@@ -616,7 +630,7 @@ export default function CreateRecipeScreen() {
                   onPress={handleDonePress}>
                   <Text style={styles.doneButtonText}>Done</Text>
                 </TouchableOpacity>
-              </BlurView>
+              </GlassPanel>
 
               <TouchableOpacity
                 style={[
@@ -636,7 +650,13 @@ export default function CreateRecipeScreen() {
 
       {isGenerating && (
         <ProgressIndicator
-          currentStepId={currentStep}
+          steps={progressSteps.map(step => ({
+            ...step,
+            status: currentStep === step.id ? 'in-progress' :
+                    progressSteps.findIndex(s => s.id === step.id) < progressSteps.findIndex(s => s.id === currentStep) ?
+                    'completed' : 'waiting'
+          }))}
+          currentStepId={currentStep || ''}
           statusMessage={statusMessage}
           error={error}
         />

@@ -8,6 +8,8 @@ import { useRecipeStore } from '@/store/recipeStore';
 import { Colors, BlurIntensities, Gradients } from '@/constants/Colors';
 import BackgroundGradient from '@/components/BackgroundGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Header from '@/components/Header';
+import GlassPanel from '@/components/GlassPanel';
 
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=800&auto=format&fit=crop&q=80';
 

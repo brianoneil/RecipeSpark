@@ -8,6 +8,8 @@ import { useState } from 'react';
 import { Colors, BlurIntensities, Gradients } from '@/constants/Colors';
 import BackgroundGradient from '@/components/BackgroundGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Header from '@/components/Header';
+import GlassPanel from '@/components/GlassPanel';
 
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=800&auto=format&fit=crop&q=80';
 
@@ -34,19 +36,14 @@ export default function SavedRecipesScreen() {
     return (
       <BackgroundGradient>
         <View style={styles.container}>
-          <LinearGradient
-            colors={[Colors.gradientStart, Colors.gradientEnd]}
-            style={styles.headerGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-          <View style={styles.header}>
-            <Text style={styles.title}>Saved Recipes</Text>
-          </View>
-        </LinearGradient>
+          <Header
+            title="Saved Recipes"
+            subtitle="Your favorite dishes"
+            showIcon={true}
+          />
 
-        <View style={styles.emptyContainer}>
-          <BlurView intensity={BlurIntensities.card} style={styles.emptyContent}>
+          <View style={styles.emptyContainer}>
+            <GlassPanel style={styles.emptyContent}>
             <BookmarkIcon size={60} color={Colors.textMuted} />
             <Text style={styles.emptyText}>You haven't saved any recipes yet.</Text>
             <TouchableOpacity
@@ -61,7 +58,7 @@ export default function SavedRecipesScreen() {
                 <Text style={styles.createButtonText}>Create a Recipe</Text>
               </LinearGradient>
             </TouchableOpacity>
-          </BlurView>
+          </GlassPanel>
         </View>
         </View>
       </BackgroundGradient>
@@ -71,42 +68,40 @@ export default function SavedRecipesScreen() {
   return (
     <BackgroundGradient>
       <View style={styles.container}>
-        <LinearGradient
-          colors={[Colors.gradientStart, Colors.gradientEnd]}
-          style={styles.headerGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-        <View style={styles.header}>
-          <Text style={styles.title}>Saved Recipes</Text>
+        <View style={styles.headerContainer}>
+          <Header
+            title="Saved Recipes"
+            subtitle="Your favorite dishes"
+            showIcon={true}
+            style={styles.header}
+          />
           <TouchableOpacity
             style={styles.editButtonContainer}
             onPress={toggleEditMode}
           >
-            <BlurView intensity={BlurIntensities.overlay} style={styles.editButtonBlur}>
+            <GlassPanel style={styles.editButtonBlur}>
               <Text style={styles.editButton}>{isEditing ? 'Done' : 'Edit'}</Text>
-            </BlurView>
+            </GlassPanel>
           </TouchableOpacity>
         </View>
-      </LinearGradient>
 
-      <FlatList
-        data={savedRecipes}
-        keyExtractor={(item) => item.id || item.name}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            style={styles.recipeCard}
-            onPress={() => handleViewRecipe(index)}
-            disabled={isEditing}
-            activeOpacity={0.8}
-          >
-            <BlurView intensity={BlurIntensities.card} style={styles.cardContent}>
-              <Image
-                source={{ uri: item.image?.[0] || PLACEHOLDER_IMAGE }}
-                style={styles.recipeImage}
-              />
-              <View style={styles.recipeInfo}>
+        <FlatList
+          data={savedRecipes}
+          keyExtractor={(item) => item.id || item.name}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item, index }) => (
+            <TouchableOpacity
+              style={styles.recipeCard}
+              onPress={() => handleViewRecipe(index)}
+              disabled={isEditing}
+              activeOpacity={0.8}
+            >
+              <GlassPanel style={styles.cardContent}>
+                <Image
+                  source={{ uri: item.image?.[0] || PLACEHOLDER_IMAGE }}
+                  style={styles.recipeImage}
+                />
+                <View style={styles.recipeInfo}>
                 <Text style={styles.recipeName}>{item.name}</Text>
 
                 <View style={styles.recipeDetails}>
@@ -142,11 +137,11 @@ export default function SavedRecipesScreen() {
                   </LinearGradient>
                 </TouchableOpacity>
               )}
-            </BlurView>
+            </GlassPanel>
           </TouchableOpacity>
         )}
-        contentContainerStyle={styles.listContent}
-      />
+          contentContainerStyle={styles.listContent}
+        />
       </View>
     </BackgroundGradient>
   );
@@ -157,23 +152,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent', // Background is handled by the root layout
   },
-  headerGradient: {
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+  headerContainer: {
+    position: 'relative',
+    zIndex: 10,
+    marginBottom: 16, // Add some space below the header
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
   },
   title: {
     fontSize: 32,
@@ -184,6 +171,10 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
   editButtonContainer: {
+    position: 'absolute',
+    right: 20,
+    bottom: 16, // Match the header's paddingBottom
+    zIndex: 20,
     overflow: 'hidden',
     borderRadius: 20,
   },
@@ -191,8 +182,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: Colors.borderMedium,
     overflow: 'hidden',
   },
   editButton: {
