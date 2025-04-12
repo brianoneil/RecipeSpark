@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Loader } from 'lucide-react-native';
+import { Colors, BlurIntensities } from '@/constants/Colors';
 
 export type ProgressStep = {
   id: string;
@@ -61,7 +62,7 @@ export default function ProgressIndicator({
 
   return (
     <View style={styles.container}>
-      <BlurView intensity={30} style={styles.contentContainer}>
+      <BlurView intensity={BlurIntensities.medium} style={styles.contentContainer}>
         {/* Progress bar */}
         <View style={styles.progressBarContainer}>
           <View style={[styles.progressBar, { width: `${progress}%` }]} />
@@ -81,7 +82,7 @@ export default function ProgressIndicator({
               >
                 {step.status === 'in-progress' && (
                   <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                    <Loader size={16} color="#fff" />
+                    <Loader size={18} color={Colors.text} />
                   </Animated.View>
                 )}
                 {step.status === 'completed' && (
@@ -142,11 +143,13 @@ const styles = StyleSheet.create({
     margin: 20,
     padding: 20,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: Colors.glass,
     width: '90%',
     maxWidth: 500,
     overflow: 'hidden',
-    shadowColor: '#000',
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -154,14 +157,14 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     height: 6,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 3,
     overflow: 'hidden',
     marginBottom: 20,
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#4a90e2',
+    backgroundColor: Colors.primary,
     borderRadius: 3,
   },
   stepsContainer: {
@@ -174,72 +177,80 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stepIndicator: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#ccc',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
   },
   stepInProgress: {
-    backgroundColor: '#4a90e2',
+    backgroundColor: Colors.primary,
   },
   stepCompleted: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: Colors.success,
   },
   stepError: {
-    backgroundColor: '#F44336',
+    backgroundColor: Colors.error,
   },
   stepWaitingText: {
-    color: '#666',
+    color: Colors.textSecondary,
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 14,
   },
   stepCompletedText: {
-    color: '#fff',
+    color: Colors.text,
     fontWeight: 'bold',
     fontSize: 16,
   },
   stepErrorText: {
-    color: '#fff',
+    color: Colors.text,
     fontWeight: 'bold',
     fontSize: 16,
   },
   stepLabel: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 14,
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
   stepLabelActive: {
-    color: '#4a90e2',
+    color: Colors.primary,
     fontWeight: 'bold',
   },
   stepLabelCompleted: {
-    color: '#4CAF50',
+    color: Colors.success,
   },
   stepLabelError: {
-    color: '#F44336',
+    color: Colors.error,
   },
   statusContainer: {
-    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+    backgroundColor: 'rgba(255, 125, 59, 0.15)',
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 125, 59, 0.3)',
   },
   statusText: {
-    color: '#4a90e2',
+    color: Colors.primary,
     fontSize: 14,
     textAlign: 'center',
+    fontWeight: '500',
   },
   errorContainer: {
-    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+    backgroundColor: 'rgba(255, 59, 48, 0.15)',
     padding: 12,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.3)',
   },
   errorText: {
-    color: '#F44336',
+    color: Colors.error,
     fontSize: 14,
     textAlign: 'center',
+    fontWeight: '500',
   },
 });

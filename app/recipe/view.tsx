@@ -9,6 +9,15 @@ import { Colors, BlurIntensities } from '@/constants/Colors';
 import BackgroundGradient from '@/components/BackgroundGradient';
 import { decimalToFraction } from '@/utils/fractions';
 
+// Helper function to capitalize the first letter of each word
+const toProperCase = (str: string): string => {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=800&auto=format&fit=crop&q=80';
 
 export default function RecipeViewScreen() {
@@ -128,14 +137,17 @@ export default function RecipeViewScreen() {
               <Text style={styles.sectionTitle}>Ingredients</Text>
             </View>
           </LinearGradient>
-          {currentRecipe.ingredients.used.map((ingredient, index) => {
+          {currentRecipe.shoppingList.items.map((item, index) => {
             // Format the quantity as a fraction if needed
-            const formattedQuantity = decimalToFraction(ingredient.quantity);
+            const formattedQuantity = decimalToFraction(item.requiredQuantity.amount);
+            const properName = toProperCase(item.name);
+            const properUnit = item.requiredQuantity.unit.toLowerCase();
+
             return (
               <Text key={index} style={styles.ingredient}>
-                • {formattedQuantity} {ingredient.unit} {ingredient.name}
-                {ingredient.note && (
-                  <Text style={styles.note}> ({ingredient.note})</Text>
+                • <Text style={styles.ingredientMeasurement}>{formattedQuantity} {properUnit}</Text> - {properName}
+                {item.purchaseNote && (
+                  <Text style={styles.note}> ({item.purchaseNote})</Text>
                 )}
               </Text>
             );
@@ -323,6 +335,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 6,
     // paddingTop: 2,
+    color: Colors.text,
+  },
+  ingredientMeasurement: {
+    fontWeight: 'bold',
     color: Colors.text,
   },
   note: {

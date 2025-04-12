@@ -252,24 +252,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  doneButton: {
-    alignSelf: 'flex-end',
-    marginTop: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-    elevation: 2,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  doneButtonText: {
-    color: Colors.text,
-    fontSize: 14,
-    fontWeight: '600',
-  },
+
 });
 
 export default function CreateRecipeScreen() {
@@ -454,18 +437,6 @@ export default function CreateRecipeScreen() {
     setParsedIngredients(newParsedIngredients);
   };
 
-
-
-  // Function to handle done button press
-  const handleDonePress = () => {
-    Keyboard.dismiss();
-
-    // // Scroll to the bottom after a short delay
-    // setTimeout(() => {
-    //   scrollViewRef.current?.scrollToEnd({ animated: true });
-    // }, 100);
-  };
-
   // Function to handle Recipe Hint input blur
   const handleRecipeHintBlur = () => {
     // Remove the extra padding when the Recipe Hint input loses focus
@@ -625,11 +596,7 @@ export default function CreateRecipeScreen() {
                   editable={!isGenerating}
                   onBlur={handleRecipeHintBlur}
                 />
-                <TouchableOpacity
-                  style={styles.doneButton}
-                  onPress={handleDonePress}>
-                  <Text style={styles.doneButtonText}>Done</Text>
-                </TouchableOpacity>
+
               </GlassPanel>
 
               <TouchableOpacity
