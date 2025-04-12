@@ -1,22 +1,19 @@
 import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, router } from 'expo-router';
-import { Clock, Users, ChefHat, ShoppingBag, Heart, Share2, ArrowLeft } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { Clock, Users, ChefHat, Share2, ArrowLeft, Bookmark } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import { useRecipeStore } from '@/store/recipeStore';
-import { Colors, BlurIntensities, Gradients } from '@/constants/Colors';
+import { Colors, BlurIntensities } from '@/constants/Colors';
 import BackgroundGradient from '@/components/BackgroundGradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Header from '@/components/Header';
-import GlassPanel from '@/components/GlassPanel';
+import { decimalToFraction } from '@/utils/fractions';
 
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=800&auto=format&fit=crop&q=80';
 
 export default function RecipeViewScreen() {
   const { currentRecipe, saveRecipe, removeSavedRecipe, isRecipeSaved } = useRecipeStore();
   const [isSaved, setIsSaved] = useState(false);
-  const insets = useSafeAreaInsets();
 
   // Check if the current recipe is saved
   useEffect(() => {
@@ -122,49 +119,40 @@ export default function RecipeViewScreen() {
         <BlurView intensity={BlurIntensities.medium} style={styles.section}>
           <LinearGradient
             colors={[Colors.primary, Colors.secondary]}
-            style={styles.sectionTitleGradient}
+            style={[styles.sectionTitleGradient, styles.sectionTitleGradientWithMargin]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
-            <Text style={styles.sectionTitle}>Ingredients</Text>
+            <View style={styles.sectionHeader}>
+              <ChefHat size={24} color={Colors.text} />
+              <Text style={styles.sectionTitle}>Ingredients</Text>
+            </View>
           </LinearGradient>
-          {currentRecipe.recipeIngredient.map((ingredient, index) => (
-            <Text key={index} style={styles.ingredient}>• {ingredient}</Text>
-          ))}
-        </BlurView>
-
-        {currentRecipe.shoppingList.items.length > 0 && (
-          <BlurView intensity={BlurIntensities.medium} style={styles.section}>
-            <LinearGradient
-              colors={[Colors.tertiary, Colors.primary]}
-              style={styles.sectionTitleGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <View style={styles.sectionHeader}>
-                <ShoppingBag size={20} color={Colors.text} />
-                <Text style={styles.sectionTitle}>Shopping List</Text>
-              </View>
-            </LinearGradient>
-            {currentRecipe.shoppingList.items.map((item, index) => (
+          {currentRecipe.ingredients.used.map((ingredient, index) => {
+            // Format the quantity as a fraction if needed
+            const formattedQuantity = decimalToFraction(ingredient.quantity);
+            return (
               <Text key={index} style={styles.ingredient}>
-                • {item.purchaseQuantity} {item.purchaseUnit} {item.name}
-                {item.purchaseNote && (
-                  <Text style={styles.note}> ({item.purchaseNote})</Text>
+                • {formattedQuantity} {ingredient.unit} {ingredient.name}
+                {ingredient.note && (
+                  <Text style={styles.note}> ({ingredient.note})</Text>
                 )}
               </Text>
-            ))}
-          </BlurView>
-        )}
+            );
+          })}
+        </BlurView>
 
         <BlurView intensity={BlurIntensities.medium} style={styles.section}>
           <LinearGradient
             colors={[Colors.secondary, Colors.primary]}
-            style={styles.sectionTitleGradient}
+            style={[styles.sectionTitleGradient, styles.sectionTitleGradientWithMargin]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
-            <Text style={styles.sectionTitle}>Instructions</Text>
+            <View style={styles.sectionHeader}>
+              <Clock size={24} color={Colors.text} />
+              <Text style={styles.sectionTitle}>Instructions</Text>
+            </View>
           </LinearGradient>
           {currentRecipe.recipeInstructions.map((instruction, index) => (
             <View key={index} style={styles.instruction}>
@@ -197,7 +185,7 @@ export default function RecipeViewScreen() {
             onPress={handleToggleSave}
           >
             <BlurView intensity={BlurIntensities.medium} style={[styles.actionButtonContent, isSaved && styles.actionButtonActive]}>
-              <Heart size={24} color={isSaved ? Colors.text : Colors.primary} fill={isSaved ? Colors.text : 'transparent'} />
+              <Bookmark size={24} color={isSaved ? Colors.text : Colors.primary} fill={isSaved ? Colors.text : 'transparent'} />
               <Text style={[styles.actionButtonText, isSaved && styles.actionButtonTextActive]}>
                 {isSaved ? 'Saved' : 'Save Recipe'}
               </Text>
@@ -214,7 +202,7 @@ export default function RecipeViewScreen() {
 
         <TouchableOpacity style={styles.startButton}>
           <LinearGradient
-            colors={Gradients.food}
+            colors={[Colors.primary, Colors.tertiary]}
             style={styles.startButtonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
@@ -309,11 +297,15 @@ const styles = StyleSheet.create({
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
+    // paddingTop: 0, // Add padding at the top of the section
     shadowRadius: 4,
   },
   sectionTitleGradient: {
     padding: 16,
     paddingVertical: 12,
+  },
+  sectionTitleGradientWithMargin: {
+    marginBottom: 16, // Add padding below the gradient header
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -324,25 +316,27 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: Colors.text,
-    marginLeft: 8,
   },
   ingredient: {
     fontSize: 16,
     marginBottom: 10,
     paddingHorizontal: 16,
     paddingBottom: 6,
+    // paddingTop: 2,
     color: Colors.text,
   },
   note: {
     fontStyle: 'italic',
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
     fontSize: 14,
   },
   instruction: {
     flexDirection: 'row',
     marginBottom: 20,
     paddingHorizontal: 16,
+    paddingTop: 4, // Add padding at the top of each instruction
     gap: 12,
+    alignItems: 'center', // Center items vertically
   },
   stepNumberContainer: {
     width: 36,
