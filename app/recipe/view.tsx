@@ -2,15 +2,19 @@ import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Alert } fr
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Clock, Users, ChefHat, ShoppingBag, Heart, Share2 } from 'lucide-react-native';
+import { Clock, Users, ChefHat, ShoppingBag, Heart, Share2, ArrowLeft } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import { useRecipeStore } from '@/store/recipeStore';
+import { Colors, BlurIntensities, Gradients } from '@/constants/Colors';
+import BackgroundGradient from '@/components/BackgroundGradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=800&auto=format&fit=crop&q=80';
 
 export default function RecipeViewScreen() {
   const { currentRecipe, saveRecipe, removeSavedRecipe, isRecipeSaved } = useRecipeStore();
   const [isSaved, setIsSaved] = useState(false);
+  const insets = useSafeAreaInsets();
 
   // Check if the current recipe is saved
   useEffect(() => {
@@ -41,126 +45,194 @@ export default function RecipeViewScreen() {
 
   if (!currentRecipe) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>No recipe found. Please generate a recipe first.</Text>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
+      <BackgroundGradient>
+        <View style={styles.container}>
+          <BlurView intensity={BlurIntensities.medium} style={styles.errorContainer}>
+            <Text style={styles.errorText}>No recipe found. Please generate a recipe first.</Text>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}>
+            <LinearGradient
+              colors={[Colors.primary, Colors.secondary]}
+              style={styles.backButtonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <ArrowLeft size={20} color="#FFF" />
+              <Text style={styles.backButtonText}>Go Back</Text>
+            </LinearGradient>
+            </TouchableOpacity>
+          </BlurView>
+        </View>
+      </BackgroundGradient>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: currentRecipe.image?.[0] || PLACEHOLDER_IMAGE }}
-          style={styles.image}
-          resizeMode="cover"
-        />
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(255,255,255,0.8)']}
-          style={styles.gradient}
-        />
-        <BlurView intensity={50} style={styles.overlay}>
-          <Text style={styles.title}>{currentRecipe.name}</Text>
-          {currentRecipe.description && (
-            <Text style={styles.description}>{currentRecipe.description}</Text>
+    <BackgroundGradient>
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: 16 }}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: currentRecipe.image?.[0] || PLACEHOLDER_IMAGE }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.5)', Colors.background]}
+            style={styles.gradient}
+          />
+          <TouchableOpacity
+            style={styles.backButtonSmall}
+            onPress={() => router.back()}
+          >
+            <BlurView intensity={BlurIntensities.heavy} style={styles.backButtonBlur}>
+              <ArrowLeft size={20} color={Colors.text} />
+            </BlurView>
+          </TouchableOpacity>
+          <BlurView intensity={BlurIntensities.medium} style={styles.overlay}>
+            <Text style={styles.title}>{currentRecipe.name}</Text>
+            {currentRecipe.description && (
+              <Text style={styles.description}>{currentRecipe.description}</Text>
+            )}
+          </BlurView>
+        </View>
+
+        <View style={styles.infoContainer}>
+          <BlurView intensity={BlurIntensities.light} style={styles.infoItem}>
+            <Clock size={24} color={Colors.primary} />
+            <Text style={styles.infoText}>{currentRecipe.totalTime.replace('PT', '').replace('M', ' min')}</Text>
+          </BlurView>
+          <BlurView intensity={BlurIntensities.light} style={styles.infoItem}>
+            <Users size={24} color={Colors.primary} />
+            <Text style={styles.infoText}>{currentRecipe.recipeYield}</Text>
+          </BlurView>
+          {currentRecipe.recipeCuisine && (
+            <BlurView intensity={BlurIntensities.light} style={styles.infoItem}>
+              <ChefHat size={24} color={Colors.primary} />
+              <Text style={styles.infoText}>{currentRecipe.recipeCuisine}</Text>
+            </BlurView>
           )}
-        </BlurView>
-      </View>
-
-      <View style={styles.infoContainer}>
-        <View style={styles.infoItem}>
-          <Clock size={24} color="#000" />
-          <Text style={styles.infoText}>{currentRecipe.totalTime}</Text>
         </View>
-        <View style={styles.infoItem}>
-          <Users size={24} color="#000" />
-          <Text style={styles.infoText}>{currentRecipe.recipeYield}</Text>
-        </View>
-        {currentRecipe.recipeCuisine && (
-          <View style={styles.infoItem}>
-            <ChefHat size={24} color="#000" />
-            <Text style={styles.infoText}>{currentRecipe.recipeCuisine}</Text>
-          </View>
-        )}
-      </View>
 
-      <BlurView intensity={20} style={styles.section}>
-        <Text style={styles.sectionTitle}>Ingredients</Text>
-        {currentRecipe.recipeIngredient.map((ingredient, index) => (
-          <Text key={index} style={styles.ingredient}>• {ingredient}</Text>
-        ))}
-      </BlurView>
-
-      {currentRecipe.shoppingList.items.length > 0 && (
-        <BlurView intensity={20} style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <ShoppingBag size={24} color="#000" />
-            <Text style={styles.sectionTitle}>Shopping List</Text>
-          </View>
-          {currentRecipe.shoppingList.items.map((item, index) => (
-            <Text key={index} style={styles.ingredient}>
-              • {item.purchaseQuantity} {item.purchaseUnit} {item.name}
-              {item.purchaseNote && (
-                <Text style={styles.note}> ({item.purchaseNote})</Text>
-              )}
-            </Text>
+        <BlurView intensity={BlurIntensities.medium} style={styles.section}>
+          <LinearGradient
+            colors={[Colors.primary, Colors.secondary]}
+            style={styles.sectionTitleGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Text style={styles.sectionTitle}>Ingredients</Text>
+          </LinearGradient>
+          {currentRecipe.recipeIngredient.map((ingredient, index) => (
+            <Text key={index} style={styles.ingredient}>• {ingredient}</Text>
           ))}
         </BlurView>
-      )}
 
-      <BlurView intensity={20} style={styles.section}>
-        <Text style={styles.sectionTitle}>Instructions</Text>
-        {currentRecipe.recipeInstructions.map((instruction, index) => (
-          <View key={index} style={styles.instruction}>
-            <Text style={styles.stepNumber}>{instruction.step || index + 1}</Text>
-            <View style={styles.stepContent}>
-              <Text style={styles.stepText}>{instruction.text}</Text>
-              {instruction.timer && (
-                <TouchableOpacity style={styles.timerButton}>
-                  <Clock size={16} color="#000" />
-                  <Text style={styles.timerText}>
-                    {instruction.durationMinutes} min
-                  </Text>
-                </TouchableOpacity>
-              )}
+        {currentRecipe.shoppingList.items.length > 0 && (
+          <BlurView intensity={BlurIntensities.medium} style={styles.section}>
+            <LinearGradient
+              colors={[Colors.tertiary, Colors.primary]}
+              style={styles.sectionTitleGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <View style={styles.sectionHeader}>
+                <ShoppingBag size={20} color={Colors.text} />
+                <Text style={styles.sectionTitle}>Shopping List</Text>
+              </View>
+            </LinearGradient>
+            {currentRecipe.shoppingList.items.map((item, index) => (
+              <Text key={index} style={styles.ingredient}>
+                • {item.purchaseQuantity} {item.purchaseUnit} {item.name}
+                {item.purchaseNote && (
+                  <Text style={styles.note}> ({item.purchaseNote})</Text>
+                )}
+              </Text>
+            ))}
+          </BlurView>
+        )}
+
+        <BlurView intensity={BlurIntensities.medium} style={styles.section}>
+          <LinearGradient
+            colors={[Colors.secondary, Colors.primary]}
+            style={styles.sectionTitleGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Text style={styles.sectionTitle}>Instructions</Text>
+          </LinearGradient>
+          {currentRecipe.recipeInstructions.map((instruction, index) => (
+            <View key={index} style={styles.instruction}>
+              <LinearGradient
+                colors={[Colors.primary, Colors.secondary]}
+                style={styles.stepNumberContainer}
+              >
+                <Text style={styles.stepNumber}>{instruction.step || index + 1}</Text>
+              </LinearGradient>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepText}>{instruction.text}</Text>
+                {instruction.timer && (
+                  <TouchableOpacity style={styles.timerButton}>
+                    <BlurView intensity={BlurIntensities.medium} style={styles.timerButtonContent}>
+                      <Clock size={16} color={Colors.primary} />
+                      <Text style={styles.timerText}>
+                        {instruction.durationMinutes} min
+                      </Text>
+                    </BlurView>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-          </View>
-        ))}
-      </BlurView>
+          ))}
+        </BlurView>
 
-      <View style={styles.actionButtonsContainer}>
-        <TouchableOpacity
-          style={[styles.actionButton, isSaved && styles.actionButtonActive]}
-          onPress={handleToggleSave}
-        >
-          <Heart size={24} color={isSaved ? '#fff' : '#000'} fill={isSaved ? '#fff' : 'transparent'} />
-          <Text style={[styles.actionButtonText, isSaved && styles.actionButtonTextActive]}>
-            {isSaved ? 'Saved' : 'Save Recipe'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleToggleSave}
+          >
+            <BlurView intensity={BlurIntensities.medium} style={[styles.actionButtonContent, isSaved && styles.actionButtonActive]}>
+              <Heart size={24} color={isSaved ? Colors.text : Colors.primary} fill={isSaved ? Colors.text : 'transparent'} />
+              <Text style={[styles.actionButtonText, isSaved && styles.actionButtonTextActive]}>
+                {isSaved ? 'Saved' : 'Save Recipe'}
+              </Text>
+            </BlurView>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-          <Share2 size={24} color="#000" />
-          <Text style={styles.actionButtonText}>Share</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+            <BlurView intensity={BlurIntensities.medium} style={styles.actionButtonContent}>
+              <Share2 size={24} color={Colors.primary} />
+              <Text style={styles.actionButtonText}>Share</Text>
+            </BlurView>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.startButton}>
+          <LinearGradient
+            colors={Gradients.food}
+            style={styles.startButtonGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Text style={styles.startButtonText}>Start Cooking</Text>
+          </LinearGradient>
         </TouchableOpacity>
+      </ScrollView>
       </View>
-
-      <TouchableOpacity style={styles.startButton}>
-        <Text style={styles.startButtonText}>Start Cooking</Text>
-      </TouchableOpacity>
-    </ScrollView>
+    </BackgroundGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'transparent', // Background is handled by the root layout
+  },
+  scrollView: {
+    flex: 1,
   },
   imageContainer: {
     height: 550, // Increased from 450 to show even more of the image
@@ -184,81 +256,104 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 20,
-    paddingTop: 25, // Add more padding at the top for better spacing
-    backgroundColor: 'rgba(255, 255, 255, 0.4)', // More transparent to see more of the image
+    backgroundColor: Colors.glass,
+    borderTopWidth: 1.5,
+    borderColor: Colors.borderMedium,
   },
   title: {
-    fontSize: 32, // Increased size for better visibility
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#000',
-    textShadowColor: 'rgba(255, 255, 255, 1)',
+    color: Colors.text,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 4,
-    marginBottom: 4, // Add some space between title and description
+    textShadowRadius: 3,
+    marginBottom: 8,
   },
   description: {
     fontSize: 16,
-    color: '#222', // Even darker color for better contrast
-    marginTop: 8,
-    textShadowColor: 'rgba(255, 255, 255, 1)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-    lineHeight: 22, // Improve readability with better line height
+    color: Colors.textSecondary,
+    lineHeight: 22,
   },
   infoContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 16,
+    marginTop: 10,
   },
   infoItem: {
     alignItems: 'center',
+    backgroundColor: Colors.glass,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
     gap: 8,
+    overflow: 'hidden',
   },
   infoText: {
     fontSize: 14,
-    color: '#000',
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
   section: {
-    margin: 20,
-    marginTop: 10,
-    padding: 20,
+    margin: 16,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: Colors.glass,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
+    elevation: 3,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  sectionTitleGradient: {
+    padding: 16,
+    paddingVertical: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    marginBottom: 12,
+    color: Colors.text,
+    marginLeft: 8,
   },
   ingredient: {
     fontSize: 16,
-    marginBottom: 8,
+    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 6,
+    color: Colors.text,
   },
   note: {
-    color: '#666',
-    fontSize: 14,
     fontStyle: 'italic',
+    color: Colors.textMuted,
+    fontSize: 14,
   },
   instruction: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingHorizontal: 16,
     gap: 12,
   },
+  stepNumberContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   stepNumber: {
-    width: 24,
-    height: 24,
-    backgroundColor: '#000',
-    color: '#fff',
-    borderRadius: 12,
+    color: Colors.text,
     textAlign: 'center',
-    lineHeight: 24,
+    fontWeight: '600',
+    fontSize: 16,
   },
   stepContent: {
     flex: 1,
@@ -266,78 +361,135 @@ const styles = StyleSheet.create({
   stepText: {
     fontSize: 16,
     lineHeight: 24,
+    color: Colors.text,
   },
   timerButton: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  timerButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    marginTop: 8,
-    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
     gap: 4,
+    // Remove overflow: 'hidden' from here as it's already on the parent
   },
   timerText: {
     fontSize: 14,
+    color: Colors.textSecondary,
   },
   actionButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    margin: 20,
+    margin: 16,
     marginBottom: 10,
   },
   actionButton: {
+    flex: 1,
+    marginHorizontal: 5,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  actionButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     padding: 12,
-    borderRadius: 12,
-    flex: 1,
-    marginHorizontal: 5,
+    backgroundColor: Colors.glass,
     gap: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
+    // Remove overflow: 'hidden' from here as it's already on the parent
   },
   actionButtonActive: {
-    backgroundColor: '#000',
+    backgroundColor: Colors.primary,
   },
   actionButtonText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#000',
+    color: Colors.text,
   },
   actionButtonTextActive: {
-    color: '#fff',
+    color: Colors.text,
   },
   startButton: {
-    backgroundColor: '#000',
-    margin: 20,
+    margin: 16,
     marginTop: 10,
-    padding: 16,
+    marginBottom: 30,
     borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  startButtonGradient: {
+    padding: 16,
     alignItems: 'center',
   },
   startButtonText: {
-    color: '#fff',
+    color: Colors.text,
     fontSize: 18,
     fontWeight: '600',
+  },
+  errorContainer: {
+    margin: 20,
+    padding: 20,
+    borderRadius: 16,
+    backgroundColor: Colors.glass,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
+    overflow: 'hidden',
   },
   errorText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 18,
     textAlign: 'center',
-    marginTop: 20,
+    margin: 20,
+    color: Colors.text,
   },
   backButton: {
-    backgroundColor: '#000',
-    margin: 20,
-    padding: 16,
-    borderRadius: 16,
+    marginTop: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+    width: '80%',
+  },
+  backButtonGradient: {
+    flexDirection: 'row',
+    padding: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   backButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: Colors.text,
+    fontSize: 16,
     fontWeight: '600',
+  },
+  backButtonSmall: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  backButtonBlur: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
   },
 });

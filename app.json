@@ -34,6 +34,9 @@
       "eas": {
         "projectId": "cb9aa128-babb-4f53-836c-b6e501314137"
       }
+    },
+    "android": {
+      "package": "com.brainivy.recipespark"
     }
   }
 }

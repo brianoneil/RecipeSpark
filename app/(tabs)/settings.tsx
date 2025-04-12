@@ -1,24 +1,31 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Colors } from '@/constants/Colors';
+import BackgroundGradient from '@/components/BackgroundGradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import GlassPanel from '@/components/GlassPanel';
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
+    <BackgroundGradient>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Settings</Text>
+        </View>
+
+        <GlassPanel style={styles.content}>
+          <Text style={{ color: Colors.textSecondary }}>Settings coming soon</Text>
+        </GlassPanel>
       </View>
-      
-      <BlurView intensity={20} style={styles.content}>
-        <Text>Settings coming soon</Text>
-      </BlurView>
-    </View>
+    </BackgroundGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'transparent', // Background is handled by the root layout
   },
   header: {
     paddingTop: 60,
@@ -28,12 +35,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
+    color: Colors.text,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   content: {
     flex: 1,
-    margin: 20,
+    margin: 16,
     borderRadius: 16,
     padding: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: Colors.glass,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    overflow: 'hidden',
   },
 });

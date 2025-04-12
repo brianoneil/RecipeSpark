@@ -1,5 +1,8 @@
 import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { Colors, BlurIntensities } from '@/constants/Colors';
 import { BlurView } from 'expo-blur';
+import BackgroundGradient from '@/components/BackgroundGradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import React, { useState, useEffect, useRef } from 'react';
 import { ChefHat, Clock, Users, Utensils, X, Loader as Loader2 } from 'lucide-react-native';
@@ -12,7 +15,7 @@ import { eventService, AIEvent } from '@/services/events';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'transparent', // Background is handled by the root layout
   },
   header: {
     paddingTop: 60,
@@ -22,26 +25,37 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
+    color: Colors.text,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   errorSection: {
-    margin: 20,
+    margin: 16,
     marginTop: 0,
     padding: 16,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 100, 100, 0.3)',
+    backgroundColor: 'rgba(255, 100, 100, 0.2)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 100, 100, 0.3)',
+    overflow: 'hidden',
   },
   errorText: {
-    color: '#800000',
+    color: '#ff6b6b',
     fontSize: 16,
     textAlign: 'center',
+    fontWeight: '500',
   },
 
   section: {
-    margin: 20,
+    margin: 16,
     marginTop: 10,
     padding: 20,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: Colors.glass,
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
+    overflow: 'hidden', // Ensure content doesn't overflow the rounded corners
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -52,13 +66,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginLeft: 8,
+    color: Colors.text,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     padding: 12,
     borderRadius: 8,
     fontSize: 16,
-    color: '#000000',
+    color: Colors.text,
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
+    overflow: 'hidden',
   },
   multilineInput: {
     height: 80,
@@ -73,14 +91,18 @@ const styles = StyleSheet.create({
   ingredientChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: Colors.glass,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 16,
     gap: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
+    overflow: 'hidden',
   },
   ingredientText: {
     fontSize: 14,
+    color: Colors.text,
   },
   servingControls: {
     flexDirection: 'row',
@@ -89,43 +111,53 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   servingButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: Colors.glass,
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
+    overflow: 'hidden',
   },
   servingButtonText: {
     fontSize: 24,
     fontWeight: '600',
+    color: Colors.primary,
   },
   servingCount: {
     fontSize: 18,
     fontWeight: '600',
     minWidth: 100,
     textAlign: 'center',
+    color: Colors.text,
   },
   cuisineScroll: {
     flexDirection: 'row',
     marginTop: 8,
   },
   cuisineChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: Colors.glass,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
     marginRight: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
+    overflow: 'hidden',
   },
   cuisineChipSelected: {
-    backgroundColor: '#000',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   cuisineText: {
     fontSize: 14,
-    color: '#000',
+    fontWeight: '500',
+    color: Colors.textSecondary,
   },
   cuisineTextSelected: {
-    color: '#fff',
+    color: Colors.text,
   },
   timeControls: {
     flexDirection: 'row',
@@ -134,31 +166,41 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   timeButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: Colors.glass,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: Colors.borderMedium,
+    overflow: 'hidden',
   },
   timeButtonText: {
     fontSize: 14,
     fontWeight: '500',
+    color: Colors.textSecondary,
   },
   timeValue: {
     fontSize: 18,
     fontWeight: '600',
+    color: Colors.text,
   },
   createButton: {
-    backgroundColor: '#000',
-    margin: 20,
+    backgroundColor: Colors.primary,
+    margin: 16,
     padding: 16,
     borderRadius: 16,
     alignItems: 'center',
+    elevation: 4,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   createButtonDisabled: {
-    backgroundColor: '#666',
+    backgroundColor: Colors.textMuted,
   },
   createButtonText: {
-    color: '#fff',
+    color: Colors.text,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -179,22 +221,30 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 8,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(74, 144, 226, 0.2)',
   },
   parsingStatusText: {
-    color: '#4a90e2',
+    color: Colors.primary,
     fontSize: 14,
     textAlign: 'center',
+    fontWeight: '500',
   },
   manualLink: {
-    backgroundColor: '#4a90e2',
+    backgroundColor: Colors.primary,
     padding: 12,
     borderRadius: 8,
     marginHorizontal: 20,
     marginTop: 10,
     alignItems: 'center',
+    elevation: 2,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   manualLinkText: {
-    color: '#fff',
+    color: Colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -203,11 +253,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: '#4a90e2',
+    backgroundColor: Colors.primary,
     borderRadius: 8,
+    elevation: 2,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   doneButtonText: {
-    color: '#fff',
+    color: Colors.text,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -216,219 +271,187 @@ const styles = StyleSheet.create({
 export default function CreateRecipeScreen() {
   const { setCurrentRecipe } = useRecipeStore();
   const params = useLocalSearchParams();
-  const mode = params.mode as 'use-what-i-have' | 'suggest';
+  const mode = params.mode as string || 'default';
+  const insets = useSafeAreaInsets();
 
-  // No need for navigation ref anymore
-
-  const [ingredients, setIngredients] = useState<ParsedIngredient[]>([]);
-  const [newIngredient, setNewIngredient] = useState('');
+  const [ingredients, setIngredients] = useState('');
+  const [parsedIngredients, setParsedIngredients] = useState<ParsedIngredient[]>([]);
+  const [isParsing, setIsParsing] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
   const [servings, setServings] = useState(4);
-  const [selectedCuisine, setSelectedCuisine] = useState<string>('');
   const [maxTime, setMaxTime] = useState(30);
+  const [selectedCuisine, setSelectedCuisine] = useState('');
   const [recipeHint, setRecipeHint] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isParsingIngredient, setIsParsingIngredient] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [currentStep, setCurrentStep] = useState<string>('ingredients');
-  const scrollViewRef = useRef<ScrollView>(null);
+  const [error, setError] = useState('');
+  const [currentStep, setCurrentStep] = useState<ProgressStep | null>(null);
   const [keyboardPadding, setKeyboardPadding] = useState(0);
-  // We'll use a more general approach with refs and measurements
-  const inputRefs = useRef<{[key: string]: any}>({});
 
-  // Define the steps for the recipe creation process - simplified for user understanding
-  const progressSteps: ProgressStep[] = [
-    { id: 'ingredients', label: 'Ingredients', status: 'completed' },
-    { id: 'recipe-generation', label: 'Creating Recipe', status: 'waiting' },
-    { id: 'image-generation', label: 'Adding Image', status: 'waiting' },
-  ];
-
-  // Update the steps based on the current step
-  const updatedSteps = progressSteps.map(step => {
-    let status: 'waiting' | 'in-progress' | 'completed' | 'error' = 'waiting';
-
-    if (step.id === currentStep) {
-      status = error ? 'error' : 'in-progress';
-    } else if (progressSteps.findIndex(s => s.id === step.id) < progressSteps.findIndex(s => s.id === currentStep)) {
-      status = 'completed';
-    }
-
-    return {
-      ...step,
-      status
-    };
-  });
+  // const scrollViewRef = useRef<ScrollView>(null);
+  const inputRefs = useRef<{ [key: string]: TextInput }>({});
 
   const cuisineTypes = [
-    'Italian', 'Chinese', 'Mexican', 'Indian', 'Japanese',
-    'Thai', 'French', 'Mediterranean', 'American', 'Korean'
+    'Italian', 'Chinese', 'Mexican', 'Indian', 'Japanese', 'Thai',
+    'French', 'Mediterranean', 'American', 'Korean'
   ];
 
-  const addIngredient = async () => {
-    if (newIngredient.trim()) {
-      setIsParsingIngredient(true);
-      setStatusMessage(`Parsing ingredient: ${newIngredient.trim()}`);
-      try {
-        const parsedIngredients = await ingredientService.parseIngredient(newIngredient.trim());
-        if (parsedIngredients.length > 0) {
-          setIngredients(prev => [...prev, ...parsedIngredients]);
-          setStatusMessage(`Added: ${parsedIngredients.map(ing => ing.name).join(', ')}`);
-          // Clear status message after a short delay
-          setTimeout(() => setStatusMessage(null), 1500);
-        }
-      } catch (error) {
-        console.error('Failed to parse ingredients:', error);
-        setError('Failed to parse ingredients. Please try again.');
-        setTimeout(() => setError(null), 3000);
-      } finally {
-        setIsParsingIngredient(false);
-        setNewIngredient('');
-      }
-    }
+  // Store input refs for later focus
+  const storeInputRef = (key: string, ref: TextInput) => {
+    inputRefs.current[key] = ref;
   };
 
-  const removeIngredient = (id: string) => {
-    setIngredients(ingredients.filter(ing => ing.id !== id));
-  };
-
-  const toggleCuisine = (cuisine: string) => {
-    setSelectedCuisine(prev => prev === cuisine ? '' : cuisine);
-  };
-
-  // Set up keyboard event listeners
+  // Parse ingredients when input changes
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
-      // Get the height of the keyboard
-      const keyboardHeight = e.endCoordinates.height;
-      // Set padding to just enough to ensure visibility
-      setKeyboardPadding(keyboardHeight + 10);
+    const parseIngredientsDebounced = setTimeout(async () => {
+      if (ingredients.trim().length > 0) {
+        setIsParsing(true);
+        try {
+          const parsed = await ingredientService.parseIngredients(ingredients);
+          setParsedIngredients(parsed);
+        } catch (err) {
+          console.error('Error parsing ingredients:', err);
+        } finally {
+          setIsParsing(false);
+        }
+      } else {
+        setParsedIngredients([]);
+      }
+    }, 500);
 
-      // The scrolling will be handled by the input focus handlers
-      // No need to scroll here
-    });
+    return () => clearTimeout(parseIngredientsDebounced);
+  }, [ingredients]);
 
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      // Reset all padding when keyboard hides
-      setKeyboardPadding(0);
-    });
+  // Handle keyboard events to adjust padding
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      (event) => {
+        // Add extra padding when the keyboard is shown
+        const keyboardHeight = event.endCoordinates.height;
+        setKeyboardPadding(keyboardHeight);
 
-    // Clean up listeners
+        // // Scroll to the bottom when keyboard appears
+        // setTimeout(() => {
+        //   scrollViewRef.current?.scrollToEnd({ animated: true });
+        // }, 100);
+      }
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        // Reset padding when keyboard is hidden
+        setKeyboardPadding(0);
+      }
+    );
+
     return () => {
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
   }, []);
 
-  // Set up event listeners for AI operations
+  // Subscribe to AI events
   useEffect(() => {
-    // Set up event listeners - simplified for better user experience
     const listeners = [
-      // Combine prompt and generation events into a single 'Creating Recipe' step
-      eventService.subscribe(AIEvent.RECIPE_PROMPT_START, () => {
-        setCurrentStep('recipe-generation');
-        setStatusMessage('Creating your personalized recipe...');
+      eventService.subscribe(AIEvent.PROMPT_CREATION_STARTED, () => {
+        setCurrentStep('prompt');
+        setStatusMessage('Creating recipe prompt...');
       }),
-
-      eventService.subscribe(AIEvent.RECIPE_GENERATION_START, () => {
-        setCurrentStep('recipe-generation');
-        setStatusMessage('Creating your personalized recipe...');
+      eventService.subscribe(AIEvent.PROMPT_CREATION_COMPLETED, () => {
+        setStatusMessage('Recipe prompt created');
       }),
-
-      eventService.subscribe(AIEvent.RECIPE_GENERATION_COMPLETE, () => {
-        setStatusMessage('Recipe created! Adding an image...');
+      eventService.subscribe(AIEvent.RECIPE_GENERATION_STARTED, () => {
+        setCurrentStep('recipe');
+        setStatusMessage('Generating recipe...');
       }),
-
-      // Combine image prompt and generation into a single 'Adding Image' step
-      eventService.subscribe(AIEvent.IMAGE_PROMPT_START, () => {
-        setCurrentStep('image-generation');
-        setStatusMessage('Adding a beautiful image to your recipe...');
+      eventService.subscribe(AIEvent.RECIPE_GENERATION_COMPLETED, () => {
+        setStatusMessage('Recipe generated');
       }),
-
-      eventService.subscribe(AIEvent.IMAGE_GENERATION_START, () => {
-        setCurrentStep('image-generation');
-        setStatusMessage('Adding a beautiful image to your recipe...');
+      eventService.subscribe(AIEvent.IMAGE_GENERATION_STARTED, () => {
+        setCurrentStep('image');
+        setStatusMessage('Generating image...');
       }),
-
-      // Handle completion and navigation
-      eventService.subscribe(AIEvent.IMAGE_GENERATION_COMPLETE, () => {
-        console.log('💬 IMAGE_GENERATION_COMPLETE event received, preparing to redirect...');
-        setStatusMessage('Recipe complete! Opening recipe...');
-
-        // Redirect immediately
+      eventService.subscribe(AIEvent.IMAGE_GENERATION_COMPLETED, () => {
+        setStatusMessage('Image generated');
+      }),
+      eventService.subscribe(AIEvent.PROCESS_COMPLETED, () => {
         setIsGenerating(false);
-        router.push('/recipe/view');
+        setCurrentStep(null);
+        setStatusMessage('');
       }),
-
-      eventService.subscribe(AIEvent.ERROR, (data) => {
-        setError(data?.message || 'An error occurred during recipe creation');
-      })
+      eventService.subscribe(AIEvent.ERROR_OCCURRED, (error: string) => {
+        setError(error);
+        setIsGenerating(false);
+        setCurrentStep(null);
+        setStatusMessage('');
+      }),
     ];
 
-    // Clean up listeners on unmount
     return () => {
       listeners.forEach(unsubscribe => unsubscribe());
     };
   }, []);
 
   const handleCreateRecipe = async () => {
-    console.log('🚀 Starting recipe creation process');
-
     try {
+      setError('');
       setIsGenerating(true);
-      setError(null);
 
-      const recipeRequest = {
-        ingredients: ingredients.map(ing => ing.name),
-        servings: servings.toString(),
-        cuisines: selectedCuisine ? [selectedCuisine] : [],
-        maxTime,
-        hint: recipeHint,
-        mode,
-      };
+      const recipe = await recipeService.generateRecipe({
+        ingredients: parsedIngredients.map(i => i.name),
+        servings,
+        maxTimeMinutes: maxTime,
+        cuisineType: selectedCuisine || undefined,
+        recipeHint: recipeHint || undefined,
+      });
 
-      // Call the recipe service to generate the recipe
-      // The events will be emitted by the service and handled by our listeners
-      const recipe = await recipeService.generateRecipe(recipeRequest);
-
-      // Store the recipe in the store so it's available when we redirect
       setCurrentRecipe(recipe);
-
-      // The redirection will be handled by the IMAGE_GENERATION_COMPLETE event listener
-
-      // Add a simple safety timeout in case the image generation takes too long
-      setTimeout(() => {
-        if (isGenerating) {
-          console.log('⚠️ Safety timeout triggered - redirecting to view');
-          setIsGenerating(false);
-          router.push('/recipe/view');
-        }
-      }, 15000); // 15 seconds safety timeout
-
-    } catch (error) {
-      console.error('❌ Recipe creation error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to generate recipe. Please try again.');
+      router.push('/recipe/view');
+    } catch (err: any) {
+      console.error('Error generating recipe:', err);
+      setError(err.message || 'Failed to generate recipe. Please try again.');
       setIsGenerating(false);
     }
   };
 
-  const isCreateEnabled = ingredients.length > 0 && !isGenerating;
-
-  // Store input refs for later use
-  const storeInputRef = (inputName: string, inputRef: any) => {
-    if (inputRef) {
-      inputRefs.current[inputName] = inputRef;
+  const toggleCuisine = (cuisine: string) => {
+    if (selectedCuisine === cuisine) {
+      setSelectedCuisine('');
+    } else {
+      setSelectedCuisine(cuisine);
     }
   };
 
-  // Function to handle Recipe Hint input focus specifically
-  const handleRecipeHintFocus = () => {
-    // Use a simpler approach - just add extra padding at the bottom when the Recipe Hint is focused
-    setKeyboardPadding(prev => prev + 250); // Add extra padding to ensure visibility
+  const removeIngredient = (index: number) => {
+    const newParsedIngredients = [...parsedIngredients];
+    newParsedIngredients.splice(index, 1);
+    setParsedIngredients(newParsedIngredients);
 
-    // Scroll to the Recipe Hint input after a short delay
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    // Update the text input to match the remaining ingredients
+    setIngredients(newParsedIngredients.map(i => i.original || i.name).join(', '));
+  };
+
+  // Function to handle manual ingredient entry
+  const handleManualEntry = () => {
+    setIsParsing(false);
+    setParsedIngredients([]);
+    setIngredients('');
+
+    // Focus the ingredients input
+    if (inputRefs.current.ingredients) {
+      inputRefs.current.ingredients.focus();
+    }
+  };
+
+  // Function to handle done button press
+  const handleDonePress = () => {
+    Keyboard.dismiss();
+
+    // // Scroll to the bottom after a short delay
+    // setTimeout(() => {
+    //   scrollViewRef.current?.scrollToEnd({ animated: true });
+    // }, 100);
   };
 
   // Function to handle Recipe Hint input blur
@@ -438,177 +461,186 @@ export default function CreateRecipeScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ flex: 1 }}>
-          <ScrollView
-            ref={scrollViewRef}
-            style={styles.container}
-            scrollEnabled={!isGenerating}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 20 + keyboardPadding }} // Minimal base padding plus keyboard height
-          >
-            <View style={styles.header}>
-          <Text style={styles.title}>
-            {mode === 'use-what-i-have' ? 'Create with Your Ingredients' : 'Get Recipe Suggestions'}
-          </Text>
-        </View>
+    <BackgroundGradient>
+      <View style={{ flex: 1 }}>
+        {/* <TouchableWithoutFeedback onPress={Keyboard.dismiss}> */}
+          <View style={{ flex: 1 }}>
+            <ScrollView
+              // ref={scrollViewRef}
+              // style={styles.container}
+              //scrollEnabled={!isGenerating}
+              // keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 20 + keyboardPadding }} // Padding for keyboard
+            >
+              <View style={styles.header}>
+                <Text style={styles.title}>
+                  {mode === 'use-what-i-have' ? 'Create with Your Ingredients' : 'Get Recipe Suggestions'}
+                </Text>
+              </View>
 
-      {!isGenerating && error && (
-        <BlurView intensity={20} style={styles.errorSection}>
-          <Text style={styles.errorText}>{error}</Text>
-        </BlurView>
-      )}
+              {!isGenerating && error && (
+                <BlurView intensity={BlurIntensities.card} style={styles.errorSection}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </BlurView>
+              )}
 
-      <BlurView intensity={20} style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <ChefHat size={24} color="#000" />
-          <Text style={styles.sectionTitle}>Ingredients</Text>
-        </View>
-        <View style={styles.inputContainer}>
-          <TextInput
-            ref={(ref) => ref && storeInputRef('ingredients', ref)}
-            style={styles.input}
-            value={newIngredient}
-            onChangeText={setNewIngredient}
-            onSubmitEditing={addIngredient}
-            placeholder="Add an ingredient (e.g., 'Chicken, Garlic, Tomato')..."
-            placeholderTextColor="#666666"
-            returnKeyType="done"
-            editable={!isParsingIngredient}
-          />
-          {isParsingIngredient && (
-            <View style={styles.parsingIndicator}>
-              <Loader2 size={20} color="#000" />
-            </View>
-          )}
-        </View>
+              <BlurView intensity={BlurIntensities.card} style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <ChefHat size={24} color={Colors.primary} />
+                  <Text style={styles.sectionTitle}>Ingredients</Text>
+                </View>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    ref={(ref) => ref && storeInputRef('ingredients', ref)}
+                    style={styles.input}
+                    placeholder="Add an ingredient (e.g. chicken, garlic, rice)"
+                    placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                    value={ingredients}
+                    onChangeText={setIngredients}
+                    editable={!isGenerating}
+                  />
+                  {isParsing && (
+                    <View style={styles.parsingIndicator}>
+                      <Loader2 size={20} color={Colors.primary} />
+                    </View>
+                  )}
+                </View>
 
-        {isParsingIngredient && statusMessage && (
-          <View style={styles.parsingStatus}>
-            <Text style={styles.parsingStatusText}>{statusMessage}</Text>
-          </View>
-        )}
+                {isParsing && ingredients.trim().length > 0 && (
+                  <View style={styles.parsingStatus}>
+                    <Text style={styles.parsingStatusText}>Parsing ingredients...</Text>
+                  </View>
+                )}
 
-        <View style={styles.ingredientsList}>
-          {ingredients.map(ingredient => (
-            <View key={ingredient.id} style={styles.ingredientChip}>
-              <Text style={styles.ingredientText}>
-                {ingredient.quantity && ingredient.unit
-                  ? `${ingredient.quantity} ${ingredient.unit} ${ingredient.name}`
-                  : ingredient.name}
-              </Text>
-              <TouchableOpacity onPress={() => removeIngredient(ingredient.id)}>
-                <X size={16} color="#666" />
+                {parsedIngredients.length > 0 && (
+                  <View style={styles.ingredientsList}>
+                    {parsedIngredients.map((ingredient, index) => (
+                      <View key={index} style={styles.ingredientChip}>
+                        <Text style={styles.ingredientText}>{ingredient.name}</Text>
+                        <TouchableOpacity onPress={() => removeIngredient(index)}>
+                          <X size={16} color={Colors.text} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {parsedIngredients.length === 0 && !isParsing && ingredients.trim().length > 0 && (
+                  <TouchableOpacity style={styles.manualLink} onPress={handleManualEntry}>
+                    <Text style={styles.manualLinkText}>Clear and try again</Text>
+                  </TouchableOpacity>
+                )}
+              </BlurView>
+
+              <BlurView intensity={BlurIntensities.card} style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Users size={24} color={Colors.primary} />
+                  <Text style={styles.sectionTitle}>Serving Size</Text>
+                </View>
+                <View style={styles.servingControls}>
+                  <TouchableOpacity
+                    style={styles.servingButton}
+                    onPress={() => setServings(prev => Math.max(1, prev - 1))}>
+                    <Text style={styles.servingButtonText}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.servingCount}>{servings} people</Text>
+                  <TouchableOpacity
+                    style={styles.servingButton}
+                    onPress={() => setServings(prev => prev + 1)}>
+                    <Text style={styles.servingButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </BlurView>
+
+              <BlurView intensity={BlurIntensities.card} style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Utensils size={24} color={Colors.primary} />
+                  <Text style={styles.sectionTitle}>Cuisine Type</Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.cuisineScroll}>
+                  {cuisineTypes.map(cuisine => (
+                    <TouchableOpacity
+                      key={cuisine}
+                      style={[
+                        styles.cuisineChip,
+                        selectedCuisine === cuisine && styles.cuisineChipSelected
+                      ]}
+                      onPress={() => toggleCuisine(cuisine)}>
+                      <Text style={[
+                        styles.cuisineText,
+                        selectedCuisine === cuisine && styles.cuisineTextSelected
+                      ]}>{cuisine}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </BlurView>
+
+              <BlurView intensity={BlurIntensities.card} style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Clock size={24} color={Colors.primary} />
+                  <Text style={styles.sectionTitle}>Maximum Time</Text>
+                </View>
+                <View style={styles.timeControls}>
+                  <TouchableOpacity
+                    style={styles.timeButton}
+                    onPress={() => setMaxTime(prev => Math.max(15, prev - 15))}>
+                    <Text style={styles.timeButtonText}>-15 min</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.timeValue}>{maxTime} minutes</Text>
+                  <TouchableOpacity
+                    style={styles.timeButton}
+                    onPress={() => setMaxTime(prev => prev + 15)}>
+                    <Text style={styles.timeButtonText}>+15 min</Text>
+                  </TouchableOpacity>
+                </View>
+              </BlurView>
+
+              <BlurView intensity={BlurIntensities.medium} style={styles.section}>
+                <Text style={styles.sectionTitle}>Recipe Hints</Text>
+                <TextInput
+                  ref={(ref) => ref && storeInputRef('recipeHint', ref)}
+                  style={[styles.input, styles.multilineInput]}
+                  placeholder="Any specific preferences? (optional)"
+                  placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                  value={recipeHint}
+                  onChangeText={setRecipeHint}
+                  multiline
+                  editable={!isGenerating}
+                  onBlur={handleRecipeHintBlur}
+                />
+                <TouchableOpacity
+                  style={styles.doneButton}
+                  onPress={handleDonePress}>
+                  <Text style={styles.doneButtonText}>Done</Text>
+                </TouchableOpacity>
+              </BlurView>
+
+              <TouchableOpacity
+                style={[
+                  styles.createButton,
+                  (parsedIngredients.length === 0 || isGenerating) && styles.createButtonDisabled
+                ]}
+                onPress={handleCreateRecipe}
+                disabled={parsedIngredients.length === 0 || isGenerating}>
+                <Text style={styles.createButtonText}>
+                  {isGenerating ? 'Creating Recipe...' : 'Create Recipe'}
+                </Text>
               </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-      </BlurView>
-
-      <BlurView intensity={20} style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Users size={24} color="#000" />
-          <Text style={styles.sectionTitle}>Serving Size</Text>
-        </View>
-        <View style={styles.servingControls}>
-          <TouchableOpacity
-            style={styles.servingButton}
-            onPress={() => setServings(prev => Math.max(1, prev - 1))}>
-            <Text style={styles.servingButtonText}>-</Text>
-          </TouchableOpacity>
-          <Text style={styles.servingCount}>{servings} people</Text>
-          <TouchableOpacity
-            style={styles.servingButton}
-            onPress={() => setServings(prev => prev + 1)}>
-            <Text style={styles.servingButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
-      </BlurView>
-
-      <BlurView intensity={20} style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Utensils size={24} color="#000" />
-          <Text style={styles.sectionTitle}>Cuisine Type</Text>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.cuisineScroll}>
-          {cuisineTypes.map(cuisine => (
-            <TouchableOpacity
-              key={cuisine}
-              style={[
-                styles.cuisineChip,
-                selectedCuisine === cuisine && styles.cuisineChipSelected
-              ]}
-              onPress={() => toggleCuisine(cuisine)}>
-              <Text style={[
-                styles.cuisineText,
-                selectedCuisine === cuisine && styles.cuisineTextSelected
-              ]}>{cuisine}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </BlurView>
-
-      <BlurView intensity={20} style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Clock size={24} color="#000" />
-          <Text style={styles.sectionTitle}>Maximum Time</Text>
-        </View>
-        <View style={styles.timeControls}>
-          <TouchableOpacity
-            style={styles.timeButton}
-            onPress={() => setMaxTime(prev => Math.max(15, prev - 15))}>
-            <Text style={styles.timeButtonText}>-15 min</Text>
-          </TouchableOpacity>
-          <Text style={styles.timeValue}>{maxTime} minutes</Text>
-          <TouchableOpacity
-            style={styles.timeButton}
-            onPress={() => setMaxTime(prev => prev + 15)}>
-            <Text style={styles.timeButtonText}>+15 min</Text>
-          </TouchableOpacity>
-        </View>
-      </BlurView>
-
-      <BlurView intensity={20} style={styles.section}>
-        <Text style={styles.sectionTitle}>Recipe Hints</Text>
-        <TextInput
-          ref={(ref) => ref && storeInputRef('recipeHint', ref)}
-          style={[styles.input, styles.multilineInput]}
-          value={recipeHint}
-          onChangeText={setRecipeHint}
-          placeholder="Try things like: Cook on the grill, I like spicy, etc."
-          placeholderTextColor="#666666"
-          multiline
-          numberOfLines={3}
-          returnKeyType="done"
-          onFocus={handleRecipeHintFocus}
-          onBlur={handleRecipeHintBlur}
-        />
-      </BlurView>
-
-      {!isGenerating && (
-        <TouchableOpacity
-          style={[styles.createButton, !isCreateEnabled && styles.createButtonDisabled]}
-          disabled={!isCreateEnabled}
-          onPress={handleCreateRecipe}>
-          <Text style={styles.createButtonText}>Create Recipe</Text>
-        </TouchableOpacity>
-      )}
             </ScrollView>
           </View>
-        </TouchableWithoutFeedback>
-
-        {isGenerating && (
-          <ProgressIndicator
-            steps={updatedSteps}
-            currentStepId={currentStep}
-            statusMessage={statusMessage}
-            error={error}
-          />
-        )}
+        {/* </TouchableWithoutFeedback> */}
       </View>
+
+      {isGenerating && (
+        <ProgressIndicator
+          currentStepId={currentStep}
+          statusMessage={statusMessage}
+          error={error}
+        />
+      )}
+    </BackgroundGradient>
   );
 }
