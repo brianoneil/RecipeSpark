@@ -128,10 +128,11 @@ Style: Professional food photography, overhead shot, natural lighting, styled on
           `Main ingredients: ${recipe.recipeIngredient.slice(0, 5).join(', ')}\n\n` +
           `${isFluxModel ?
             'Create a prompt for the FLUX.1 model which is specialized for food photography. ' +
-            'Focus on describing the food itself, plating, and styling. Keep the prompt concise (under 75 words). ' +
+            'Focus on describing the prepared meal, plating, and styling. Keep the prompt concise (under 75 words). Make sure the prompt states to not include ingredients that are not in the recipe.' +
             'Do not include any negative prompts or technical parameters.' :
             'The prompt should describe how the finished dish looks, the plating style, background, lighting, etc. ' +
-            'Make it detailed enough for an AI image generator to create a beautiful food photograph.'
+            'Make it detailed enough for an AI image generator to create a beautiful food photograph.' + 
+            'Make sure the meal is centered toward the top of the shot and not a closeup'
           }`
       }
     ];

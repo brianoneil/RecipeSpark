@@ -34,7 +34,7 @@ export class RecipeService {
   }
 
   private buildSystemPrompt(request: z.infer<typeof RequestSchema>) {
-    return `You are a professional chef and recipe creator. Create a recipe that matches these requirements:
+    return `You are a professional chef and recipe creator. Create a recipe that matches these requirements and try to use existing recipes as a starting point:
 
 ${request.mode === 'use-what-i-have'
   ? `CRITICAL: You MUST create a recipe that uses ONLY the following ingredients. DO NOT add any other ingredients: ${request.ingredients.join(', ')}`
@@ -51,6 +51,8 @@ ${request.mode === 'use-what-i-have'
   ? 'IMPORTANT: The recipe MUST NOT include ANY ingredients that are not in the provided list. This is a strict requirement.'
   : 'You may suggest additional ingredients that complement the provided ones.'
 }
+
+The description of the recipe should be a short description of the finished meal not focused on the ingredients alone.
 
 The response MUST be a valid JSON object with the following structure:
 
@@ -129,7 +131,7 @@ NEVER use null for unit fields. Always use an empty string "" instead of null wh
       this.recipeModel,
       [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: 'Generate a recipe based on the given requirements.' }
+        { role: 'user', content: 'Generate a recipe based on the given requirements. Make sure the steps are detailed instructions and are atomic and easy to follow. ' }
       ]
     );
     eventService.emit(AIEvent.RECIPE_GENERATION_COMPLETE);
