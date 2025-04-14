@@ -14,6 +14,13 @@ export class IngredientService {
   constructor(openRouter: OpenRouterService, model: string) {
     this.openRouter = openRouter;
     this.model = model;
+    
+    // Debug logging
+    console.log('🔧 IngredientService initialized:', {
+      model: this.model,
+      modelType: typeof this.model,
+      modelLength: this.model?.length || 0
+    });
   }
 
   private generateId(): string {

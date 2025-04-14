@@ -9,7 +9,9 @@
     "lint": "expo lint",
     "build:ios": "eas build --platform ios",
     "build:ios:simulator": "eas build --platform ios --profile preview",
-    "submit:ios": "eas submit --platform ios"
+    "submit:ios": "eas submit --platform ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.0",

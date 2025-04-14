@@ -57,3 +57,17 @@ android/*.iml
 android/.settings
 android/.project
 android/app/release/
+
+# Build artifacts
+build-*.ipa
+
+# Additional iOS ignores
+ios/.xcode.env
+ios/Podfile.properties.json
+ios/Podfile.lock
+
+# Additional Android ignores
+android/app/debug.keystore
+
+# Environment files
+.env.preview

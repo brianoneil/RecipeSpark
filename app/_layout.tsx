@@ -9,6 +9,17 @@ import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 export default function RootLayout() {
   useFrameworkReady();
 
+  useEffect(() => {
+    // Debug environment variables at app startup
+    console.log('🔧 App Environment Check:', {
+      EXPO_PUBLIC_OPENROUTER_API_KEY: process.env.EXPO_PUBLIC_OPENROUTER_API_KEY ? 'Set' : 'Not set',
+      EXPO_PUBLIC_INGREDIENTS_MODEL: process.env.EXPO_PUBLIC_INGREDIENTS_MODEL,
+      EXPO_PUBLIC_RECIPE_MODEL: process.env.EXPO_PUBLIC_RECIPE_MODEL,
+      rawIngredientsModel: JSON.stringify(process.env.EXPO_PUBLIC_INGREDIENTS_MODEL),
+      envKeys: Object.keys(process.env).filter(key => key.startsWith('EXPO_PUBLIC_'))
+    });
+  }, []);
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient

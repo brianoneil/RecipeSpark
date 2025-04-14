@@ -13,6 +13,14 @@ export class OpenRouterService {
   constructor(config: OpenRouterConfig) {
     this.config = config;
 
+    // Debug environment configuration
+    console.log('🔍 OpenRouter Service Debug:', {
+      hasApiKey: !!this.config.apiKey,
+      apiKeyLength: this.config.apiKey?.length || 0,
+      appUrl: this.config.appUrl,
+      apiKeyFirstChars: this.config.apiKey ? `${this.config.apiKey.substring(0, 4)}...` : 'none'
+    });
+
     // Log configuration on initialization (without sensitive data)
     console.log('🔧 OpenRouter Service Configuration:', {
       appUrl: this.config.appUrl,
@@ -21,28 +29,62 @@ export class OpenRouterService {
   }
 
   private async makeRequest(endpoint: string, body: any) {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    console.log('🌐 Making API request to OpenRouter:', {
+      url: `${API_URL}${endpoint}`,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.apiKey}`,
         'HTTP-Referer': this.config.appUrl,
-      },
-      body: JSON.stringify(body),
+        // Not logging Authorization header for security
+      }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ OpenRouter API error:', {
-        endpoint,
+    try {
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.config.apiKey}`,
+          'HTTP-Referer': this.config.appUrl,
+        },
+        body: JSON.stringify(body),
+      });
+
+      console.log('🌐 OpenRouter Response:', {
         status: response.status,
         statusText: response.statusText,
-        error: errorText
+        headers: Object.fromEntries(response.headers.entries()),
       });
-      throw new Error(`API request failed: ${response.statusText}`);
-    }
 
-    return response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ OpenRouter API error details:', {
+          endpoint,
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+        throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('✅ OpenRouter Response data:', {
+        endpoint,
+        status: response.status,
+        hasChoices: !!responseData.choices,
+        hasData: !!responseData.data
+      });
+
+      return responseData;
+    } catch (error: any) {
+      console.error('❌ OpenRouter API call failed:', {
+        endpoint,
+        error: error?.message || 'Unknown error',
+        stack: error?.stack || 'No stack trace available'
+      });
+      throw error;
+    }
   }
 
   async chat(model: string, messages: any[], temperature = 0.7) {
