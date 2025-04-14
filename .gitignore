@@ -71,3 +71,7 @@ android/app/debug.keystore
 
 # Environment files
 .env.preview
+
+# EAS configuration
+eas.json
+!eas.sample.json
